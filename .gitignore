@@ -1,0 +1,11 @@
+
+__pycache__/
+*.py[cod]
+*$py.class
+
+*.html
+
+build
+dist
+*.egg-info/
+

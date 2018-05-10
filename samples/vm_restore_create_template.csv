@@ -1,0 +1,5 @@
+template,restore,vms,desttype,start,end,hostdest,pvlan,tvlan,dsdest
+BCJ VM RES,BCJ VM T1,BCJVM1|BCJVM2,1,,,,,,
+BCJ VM RES,BCJ VM T2,BCJVM1,2,8/10/2017 5:00,8/11/2017 14:00,,,,
+BCJ VM RES,BCJ VM T3,BCJVM1|BCJVM2|BCJVM3,3,,,psdemo2.devad.catalogic.us,VM Network,QA Network,BCJ_ECX_STORE
+BCJ VM RES,BCJ VM T4,BCJVM3,1,,,,,,

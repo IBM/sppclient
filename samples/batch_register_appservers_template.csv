@@ -1,0 +1,4 @@
+provider name,provider host,provider site,provider credentials,provider type,provider server type,provider os,provider vcenter,provider port,provider comment
+sql-server1,172.20.58.1,New York,bjones,sql,physical,,,,
+oracle1,172.20.58.2,New York,bjones,oracle,virtual,,psvcenter1.ad.catalogic.us,,
+filesystem1,172.20.58.3,New York,bjones,osvolume,physical,windows,,,
