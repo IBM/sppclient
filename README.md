@@ -7,7 +7,7 @@ Installation
 For now, directly install into a local virtual env:
 
 # clone the project and change into the directory.
-$ git clone git@bitbucket.org:draghuram/ecxlib.git
+$ git clone https://github.com/sppautomation/sppclient.git
 $ cd ecxlib
 
 # Create a virtual environment
