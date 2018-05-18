@@ -25,7 +25,7 @@ except ImportError:
 # Uncomment this to see requests and responses.
 # TODO: We need better way and we should log requests and responses in
 # log file.
-# http_client.HTTPConnection.debuglevel = 1
+#http_client.HTTPConnection.debuglevel = 1
 urllib3.disable_warnings()
 
 resource_to_endpoint = {
@@ -99,13 +99,14 @@ class EcxSession(object):
         self.conn = requests.Session()
         self.conn.verify = False
         self.conn.hooks.update({'response': raise_response_error})
-
+        
+        
         if not self.sessionid:
             if self.username and self.password:
                 self.login()
             else:
                 raise Exception('Please provide login credentials.')
-
+        
         self.conn.headers.update({'X-Endeavour-Sessionid': self.sessionid})
         self.conn.headers.update({'Content-Type': 'application/json'})
         self.conn.headers.update({'Accept': 'application/json'})
@@ -113,7 +114,8 @@ class EcxSession(object):
     def login(self):
         r = self.conn.post("%s/endeavour/session" % self.sess_url, auth=HTTPBasicAuth(self.username, self.password))
         self.sessionid = r.json()['sessionid']
-
+    
+        
     def __repr__(self):
         return 'EcxSession: user: %s' % self.username
 
@@ -178,7 +180,8 @@ class EcxSession(object):
         if r.content:
             return r.json()
 
-        return {}
+        return {}  
+    
 
 class EcxAPI(object):
     def __init__(self, ecx_session, restype=None, endpoint=None):
@@ -207,6 +210,8 @@ class EcxAPI(object):
     def put(self, resid=None, path=None, data={}, params={}, url=None):
         return self.ecx_session.put(restype=self.restype, resid=resid, path=path, data=data,
                                      params=params, url=url)
+    
+        
 
 class JobAPI(EcxAPI):
     def __init__(self, ecx_session):
@@ -471,3 +476,16 @@ class restoreAPI(EcxAPI):
                 currentstatus = session['status']
                 break
         return currentstatus
+    
+
+def change_password(url,username,password,newpassword):
+        data = {'newPassword':newpassword}
+        conn = requests.Session()
+        conn.verify = False
+        #conn.hooks.update({'response': raise_response_error})
+        #conn.headers.update({'X-Endeavour-Sessionid': self.sessionid})
+        conn.headers.update({'Content-Type': 'application/json'})
+        conn.headers.update({'Accept': 'application/json'})
+        return conn.post("%s/api/endeavour/session?changePassword=true&screenInfo=1" % url, json=data,auth=HTTPBasicAuth(username,password))
+        
+    
