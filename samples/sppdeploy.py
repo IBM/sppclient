@@ -16,7 +16,7 @@ try:
     import urllib3
 except ImportError:
     from requests.packages import urllib3
-import sppclient.sdk.client as client
+import spplib.sdk.client as client
 urllib3.disable_warnings()
 logging.basicConfig()
 logger = logging.getLogger('logger')
@@ -28,11 +28,11 @@ parser.add_option("--pass", dest="password", help="New SPP admin Password")
 (options, args) = parser.parse_args()
 
 def prettyprint(indata):
-    print json.dumps(indata, sort_keys=True,indent=4, separators=(',', ': '))
+    print(json.dumps(indata, sort_keys=True,indent=4, separators=(',', ': ')))
 
 def validate_input():
     if(options.host is None or options.password is None):
-        print "Invalid input, use -h switch for help"
+        print("Invalid input, use -h switch for help")
         sys.exit(2)
 
 def wait_for_deployment():

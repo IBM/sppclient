@@ -12,7 +12,7 @@ import logging
 from optparse import OptionParser
 import copy
 import sys
-import sppclient.sdk.client as client
+import spplib.sdk.client as client
 import urllib
 logging.basicConfig()
 logger = logging.getLogger('logger')
@@ -41,12 +41,12 @@ if(options.destpath is None):
 
 
 def prettyprint(indata):
-    print json.dumps(indata, sort_keys=True,indent=4, separators=(',', ': '))
+    print(json.dumps(indata, sort_keys=True,indent=4, separators=(',', ': ')))
 
 def validate_input():
     if(options.username is None or options.password is None or options.host is None or
        options.file is None or options.vm is None or options.path is None):
-        print "Invalid input, use -h switch for help"
+        print("Invalid input, use -h switch for help")
         sys.exit(2)
 
 def search_for_file():

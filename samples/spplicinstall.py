@@ -23,11 +23,11 @@ parser.add_option("--host", dest="host", help="SPP Host, (ex. https://172.20.49.
 (options, args) = parser.parse_args()
 
 def prettyprint(indata):
-    print json.dumps(indata, sort_keys=True,indent=4, separators=(',', ': '))
+    print(json.dumps(indata, sort_keys=True,indent=4, separators=(',', ': ')))
 
 def validate_input():
     if(options.host is None):
-        print "Invalid input, use -h switch for help"
+        print("Invalid input, use -h switch for help")
         sys.exit(2)
     
 def install_license():

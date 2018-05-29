@@ -6,7 +6,7 @@ import logging
 from optparse import OptionParser
 import copy
 import sys
-import sppclient.sdk.client as client
+import spplib.sdk.client as client
 logging.basicConfig()
 logger = logging.getLogger('logger')
 logger.setLevel(logging.INFO)
@@ -19,12 +19,12 @@ parser.add_option("--jobname", dest="jobname", help="Job name to run")
 (options, args) = parser.parse_args()
 
 def prettyprint(indata):
-    print json.dumps(indata, sort_keys=True,indent=4, separators=(',', ': '))
+    print(json.dumps(indata, sort_keys=True,indent=4, separators=(',', ': ')))
 
 def validate_input():
     if(options.username is None or options.password is None or options.host is None or
        options.jobname is None):
-        print "Invalid input, use -h switch for help"
+        print("Invalid input, use -h switch for help")
         sys.exit(1)
 
 def find_job_from_name():
@@ -34,7 +34,7 @@ def find_job_from_name():
         for job in joblist:
             if(job['name'].upper() == options.jobname.upper()):
                 return job
-        print "No job with provided name found."
+        print("No job with provided name found.")
         session.logout()
         sys.exit(2)
     except client.requests.exceptions.HTTPError as err:
@@ -46,9 +46,9 @@ def run_job(job):
     jobrunpath = "job/" + job['id'] + "?action=start&actionname=start"
     try:
         response = client.SppAPI(session, 'endeavour').post(path=jobrunpath)
-        print "Running job " + job['name']
+        print("Running job " + job['name'])
     except client.requests.exceptions.HTTPError as err:
-        print err.response.content
+        print(err.response.content)
         session.logout()
         sys.exit(4)
         

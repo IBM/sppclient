@@ -8,7 +8,7 @@ import logging
 from optparse import OptionParser
 import copy
 import sys
-import sppclient.sdk.client as client
+import spplib.sdk.client as client
 logging.basicConfig()
 logger = logging.getLogger('logger')
 logger.setLevel(logging.INFO)
@@ -27,13 +27,13 @@ parser.add_option("--hvssc", dest="hvssc", help="hypervisor snapshot concurrency
 (options, args) = parser.parse_args()
 
 def prettyprint(indata):
-    print json.dumps(indata, sort_keys=True,indent=4, separators=(',', ': '))
+    print(json.dumps(indata, sort_keys=True,indent=4, separators=(',', ': ')))
 
 def validate_input():
     if(options.username is None or options.password is None or options.host is None or
        options.hvhost is None or options.hvuser is None or options.hvpass is None
        or options.hvtype is None):
-        print "Invalid input, use -h switch for help"
+        print("Invalid input, use -h switch for help")
         sys.exit(2)
 
 def build_hypervisor():
@@ -75,10 +75,10 @@ def build_hypervisor():
 def register_hypervisor(hvinfo):
     try:
         response = client.SppAPI(session, 'spphv').post(data=hvinfo)
-        print options.hvhost + " is registered"
+        print(options.hvhost + " is registered")
     except client.requests.exceptions.HTTPError as err:
         errmsg = json.loads(err.response.content)
-        print errmsg['response']['description']
+        print(errmsg['response']['description'])
 
 validate_input()
 session = client.SppSession(options.host, options.username, options.password)

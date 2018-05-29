@@ -8,7 +8,7 @@ import logging
 from optparse import OptionParser
 import copy
 import sys
-import sppclient.sdk.client as client
+import spplib.sdk.client as client
 import requests
 logging.basicConfig()
 logger = logging.getLogger('logger')
@@ -22,11 +22,11 @@ parser.add_option("--newpass", dest="newPassword", help="SPP New Password")
 (options, args) = parser.parse_args()
 
 def prettyprint(indata):
-    print json.dumps(indata, sort_keys=True,indent=4, separators=(',', ': '))
+    print(json.dumps(indata, sort_keys=True,indent=4, separators=(',', ': ')))
 
 def validate_input():
     if(options.username is None or options.password is None or options.host is None or options.newPassword is None):
-        print "Invalid input, use -h switch for help"
+        print("Invalid input, use -h switch for help")
         sys.exit(2)
 
 def change_password():
@@ -41,7 +41,7 @@ def change_password():
           try:
             changeResponse = requests.post(changePasswordURL, json=body, verify=False, headers=hdrs)
             changeResponse.raise_for_status()
-            print "Password changed for " + options.username
+            print("Password changed for " + options.username)
           except requests.exceptions.HTTPError as err:
             errmsg = json.loads(err.response.content)
             print errmsg['description']

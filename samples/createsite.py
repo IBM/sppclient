@@ -6,7 +6,7 @@ import logging
 from optparse import OptionParser
 import copy
 import sys
-import sppclient.sdk.client as client
+import spplib.sdk.client as client
 logging.basicConfig()
 logger = logging.getLogger('logger')
 logger.setLevel(logging.INFO)
@@ -20,12 +20,12 @@ parser.add_option("--sitedesc", dest="sitedesc", help="Site description")
 (options, args) = parser.parse_args()
 
 def prettyprint(indata):
-    print json.dumps(indata, sort_keys=True,indent=4, separators=(',', ': '))
+    print(json.dumps(indata, sort_keys=True,indent=4, separators=(',', ': ')))
 
 def validate_input():
     if(options.username is None or options.password is None or options.host is None or
        options.sitename is None or options.sitedesc is None):
-        print "Invalid input, use -h switch for help"
+        print("Invalid input, use -h switch for help")
         sys.exit(2)
 
 def create_site():
@@ -35,10 +35,10 @@ def create_site():
     siteinfo['defaultSite'] = False
     try:
         response = client.SppAPI(session, 'coresite').post(data=siteinfo)
-        print options.sitename + " is created"
+        print(options.sitename + " is created")
     except client.requests.exceptions.HTTPError as err:
         errmsg = json.loads(err.response.content)
-        print errmsg['response']
+        print(errmsg['response'])
 
 validate_input()
 session = client.SppSession(options.host, options.username, options.password)

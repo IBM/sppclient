@@ -5,7 +5,7 @@ import json
 import logging
 from optparse import OptionParser
 import sys
-import sppclient.sdk.client as client
+import spplib.sdk.client as client
 logging.basicConfig()
 logger = logging.getLogger('logger')
 logger.setLevel(logging.INFO)
@@ -17,25 +17,25 @@ parser.add_option("--host", dest="host", help="SPP Host, (ex. https://172.20.49.
 (options, args) = parser.parse_args()
 
 def prettyprint(indata):
-    print json.dumps(indata, sort_keys=True,indent=4, separators=(',', ': '))
+    print(json.dumps(indata, sort_keys=True,indent=4, separators=(',', ': ')))
 
 def validate_input():
     if(options.username is None or options.password is None or options.host is None):
-        print "Invalid input, use -h switch for help"
+        print("Invalid input, use -h switch for help")
         sys.exit(2)
 
 def get_vsnap_status():
     try:
         storages = client.SppAPI(session, 'corestorage').get()['storages']
         if(len(storages) < 1):
-            print "No vSnap storage providers found"
+            print("No vSnap storage providers found")
             session.logout()
             sys.exit(2)
         for storage in storages:
             if(storage['type'] == "vsnap"):
-                print "vSnap provider " + storage['name'] + " is " + storage['initializeStatus']
+                print("vSnap provider " + storage['name'] + " is " + storage['initializeStatus'])
     except:
-        print "Error connecting to SPP host"
+        print("Error connecting to SPP host")
     
 
 
