@@ -30,7 +30,7 @@ urllib3.disable_warnings()
 
 resource_to_endpoint = {
     'job': 'api/endeavour/job',
-	'jobsession': 'api/endeavour/jobsession',
+    'jobsession': 'api/endeavour/jobsession',
     'log': 'endeavour/log',
     'association': 'endeavour/association',
     'workflow': 'spec/storageprofile',
@@ -46,7 +46,13 @@ resource_to_endpoint = {
     'sppsla': 'ngp/slapolicy',
     'site': 'site',
     'appserver': 'ngp/appserver',
-    'apiappsever':'api/appserver'
+    'apiappsever':'api/appserver',
+    'corehv': 'api/hypervisor',
+    'coresite': 'api/site',
+    'spphv': 'ngp/hypervisor',
+    'storage': 'ngp/storage',
+    'corestorage': 'api/storage',
+    'endeavour': 'api/endeavour'
 }
 
 resource_to_listfield = {
@@ -100,7 +106,7 @@ def change_password(url, username, password, newpassword):
     return conn.post("%s/api/endeavour/session?changePassword=true&screenInfo=1" % url, json=data,
                          auth=HTTPBasicAuth(username, password))
     
-class EcxSession(object):
+class SppSession(object):
     def __init__(self, url, username=None, password=None, sessionid=None):
         self.url = url
         self.sess_url = url + '/api'
@@ -127,10 +133,13 @@ class EcxSession(object):
     def login(self):
         r = self.conn.post("%s/endeavour/session" % self.sess_url, auth=HTTPBasicAuth(self.username, self.password))
         self.sessionid = r.json()['sessionid']
+
+    def logout(self):
+        r = self.conn.delete("%s/endeavour/session" % self.sess_url)
     
         
     def __repr__(self):
-        return 'EcxSession: user: %s' % self.username
+        return 'sppSession: user: %s' % self.username
 
     def get(self, restype=None, resid=None, path=None, params={}, endpoint=None, url=None):
         if url is None:
@@ -196,44 +205,44 @@ class EcxSession(object):
         return {}  
     
 
-class EcxAPI(object):
-    def __init__(self, ecx_session, restype=None, endpoint=None):
-        self.ecx_session = ecx_session
+class SppAPI(object):
+    def __init__(self, spp_session, restype=None, endpoint=None):
+        self.spp_session = spp_session
         self.restype = restype
         self.endpoint = endpoint
         self.list_field = resource_to_listfield.get(restype, self.restype + 's')
 
     def get(self, resid=None, path=None, params={}, url=None):
-        return self.ecx_session.get(restype=self.restype, resid=resid, path=path, params=params, url=url)
+        return self.spp_session.get(restype=self.restype, resid=resid, path=path, params=params, url=url)
 
     def stream_get(self, resid=None, path=None, params={}, url=None, outfile=None):
-        return self.ecx_session.stream_get(restype=self.restype, resid=resid, path=path,
+        return self.spp_session.stream_get(restype=self.restype, resid=resid, path=path,
                                            params=params, url=url, outfile=outfile)
 
     def delete(self, resid):
-         return self.ecx_session.delete(restype=self.restype, resid=resid)
+         return self.spp_session.delete(restype=self.restype, resid=resid)
 
     def list(self):
-        return self.ecx_session.get(restype=self.restype)[self.list_field]
+        return self.spp_session.get(restype=self.restype)[self.list_field]
 
     def post(self, resid=None, path=None, data={}, params={}, url=None):
-        return self.ecx_session.post(restype=self.restype, resid=resid, path=path, data=data,
+        return self.spp_session.post(restype=self.restype, resid=resid, path=path, data=data,
                                      params=params, url=url)
                                      
     def put(self, resid=None, path=None, data={}, params={}, url=None):
-        return self.ecx_session.put(restype=self.restype, resid=resid, path=path, data=data,
+        return self.spp_session.put(restype=self.restype, resid=resid, path=path, data=data,
                                      params=params, url=url)
     
         
 
-class JobAPI(EcxAPI):
-    def __init__(self, ecx_session):
-        super(JobAPI, self).__init__(ecx_session, 'job')
+class JobAPI(SppAPI):
+    def __init__(self, spp_session):
+        super(JobAPI, self).__init__(spp_session, 'job')
 
     # TODO: May need to check this API seems to return null instead of current status
     # Can use lastSessionStatus property in the job object for now
     def status(self, jobid):
-        return self.ecx_session.get(restype=self.restype, resid=jobid, path='status')
+        return self.spp_session.get(restype=self.restype, resid=jobid, path='status')
     
     def getjob(self,name):
         jobs = self.get()['jobs']
@@ -245,7 +254,7 @@ class JobAPI(EcxAPI):
     # The process of job start is different depending on whether jobs have storage
     # workflows.
     def run(self, jobid, workflowid=None):
-        job = self.ecx_session.get(restype=self.restype, resid=jobid)
+        job = self.spp_session.get(restype=self.restype, resid=jobid)
 
         links = job['links']
         if 'start' not in links:
@@ -256,7 +265,7 @@ class JobAPI(EcxAPI):
 
         if 'schema' in start_link:
             # The job has storage profiles.
-            schema_data = self.ecx_session.get(url=start_link['schema'])
+            schema_data = self.spp_session.get(url=start_link['schema'])
             workflows = schema_data['parameter']['actionname']['values']
             if not workflows:
                 raise Exception("No workflows for job: %d" % jobid)
@@ -268,12 +277,12 @@ class JobAPI(EcxAPI):
             else:
                 reqdata["actionname"] = workflows[0]['value']
 
-        jobrun = self.ecx_session.post(url=start_link['href'], data=reqdata)
+        jobrun = self.spp_session.post(url=start_link['href'], data=reqdata)
 
         # The session ID corresponding to the latest run is not sent back
         # in response. Rather, we need to query to get it.
         for i in range(5):
-            live_sessions = self.ecx_session.get(url=jobrun['links']['livejobsessions']['href'])
+            live_sessions = self.spp_session.get(url=jobrun['links']['livejobsessions']['href'])
             pretty_print(live_sessions)
 
             try:
@@ -290,7 +299,7 @@ class JobAPI(EcxAPI):
     def get_log_entries(self, jobsession_id, page_size=1000, page_start_index=0):
         logging.info("*** get_log_entries: jobsession_id = %s, page_start_index: %s ***" % (jobsession_id, page_start_index))
 
-        resp = self.ecx_session.get(restype='log', path='job',
+        resp = self.spp_session.get(restype='log', path='job',
                                     params={'pageSize': page_size, 'pageStartIndex': page_start_index,
                                             'sort': '[{"property":"logTime","direction":"ASC"}]',
                                             'filter': '[{"property":"jobsessionId","value":"%s"}]'%jobsession_id})
@@ -316,25 +325,25 @@ class JobAPI(EcxAPI):
         
         sessionId = self.getjob(job_name)['lastrun']['sessionId']
         print(sessionId)
-        sessionStatus = self.ecx_session.get(path='api/endeavour/jobsession/'+sessionId)['status']
+        sessionStatus = self.spp_session.get(path='api/endeavour/jobsession/'+sessionId)['status']
         return jobStatus,sessionStatus
 
-class UserIdentityAPI(EcxAPI):
-    def __init__(self, ecx_session):
-        super(UserIdentityAPI, self).__init__(ecx_session, 'identityuser')
+class UserIdentityAPI(SppAPI):
+    def __init__(self, spp_session):
+        super(UserIdentityAPI, self).__init__(spp_session, 'identityuser')
 
     def create(self, data):
         return self.post(data=data)
 
-class AppserverAPI(EcxAPI):
-    def __init__(self, ecx_session):
-        super(AppserverAPI, self).__init__(ecx_session, 'appserver')
+class AppserverAPI(SppAPI):
+    def __init__(self, spp_session):
+        super(AppserverAPI, self).__init__(spp_session, 'appserver')
 
-class VsphereAPI(EcxAPI):
-    def __init__(self, ecx_session):
-        super(VsphereAPI, self).__init__(ecx_session, 'vsphere')
+class VsphereAPI(SppAPI):
+    def __init__(self, spp_session):
+        super(VsphereAPI, self).__init__(spp_session, 'vsphere')
 
-class ResProviderAPI(EcxAPI):
+class ResProviderAPI(SppAPI):
     # Credential info is passed in different field names so we need to maintain
     # the mapping.
     user_field_name_map = {"appserver": "osuser", "purestorage": "user", "emcvnx": "user"}
@@ -342,8 +351,8 @@ class ResProviderAPI(EcxAPI):
     # Resource type doesn't always correspond to API so we need a map.
     res_api_map = {"purestorage": "pure"}
 
-    def __init__(self, ecx_session, restype):
-        super(ResProviderAPI, self).__init__(ecx_session, ResProviderAPI.res_api_map.get(restype, restype))
+    def __init__(self, spp_session, restype):
+        super(ResProviderAPI, self).__init__(spp_session, ResProviderAPI.res_api_map.get(restype, restype))
 
     def register(self, name, host, osuser_identity, appType=None, osType=None, catalog=True, ssl=True, vsphere_id=None):
         osuser_field = ResProviderAPI.user_field_name_map.get(self.restype, 'user')
@@ -368,23 +377,23 @@ class ResProviderAPI(EcxAPI):
 
         return self.post(data=reqdata)
 
-class AssociationAPI(EcxAPI):
-    def __init__(self, ecx_session):
-        super(AssociationAPI, self).__init__(ecx_session, 'association')
+class AssociationAPI(SppAPI):
+    def __init__(self, spp_session):
+        super(AssociationAPI, self).__init__(spp_session, 'association')
 
     def get_using_resources(self, restype, resid):
         return self.get(path="resource/%s/%s" % (restype, resid), params={"action": "listUsingResources"})
 
-class LogAPI(EcxAPI):
-    def __init__(self, ecx_session):
-        super(LogAPI, self).__init__(ecx_session, 'log')
+class LogAPI(SppAPI):
+    def __init__(self, spp_session):
+        super(LogAPI, self).__init__(spp_session, 'log')
 
     def download_logs(self, outfile=None):
         return self.stream_get(path="download/diagnostics", outfile=outfile)
 
-class OracleAPI(EcxAPI):
-    def __init__(self, ecx_session):
-        super(OracleAPI, self).__init__(ecx_session, 'oracle')
+class OracleAPI(SppAPI):
+    def __init__(self, spp_session):
+        super(OracleAPI, self).__init__(spp_session, 'oracle')
         
     def get_instances(self):
         return self.get(path="/instance?from=hlo")
@@ -393,9 +402,9 @@ class OracleAPI(EcxAPI):
         for inst in instances:
             if inst['name'] == name:
                 return inst
-class SqlAPI(EcxAPI):
-    def __init__(self, ecx_session):
-        super(SqlAPI, self).__init__(ecx_session, 'sql')
+class SqlAPI(SppAPI):
+    def __init__(self, spp_session):
+        super(SqlAPI, self).__init__(spp_session, 'sql')
         
     def get_instances(self):
         return self.get(path="/instance?from=hlo")
@@ -411,9 +420,9 @@ class SqlAPI(EcxAPI):
     def get_database_copy_versions(self, instanceid, databaseid):
         return self.get(path="oraclehome/%s/database/%s" % (instanceid, databaseid) + "/version")
     
-class slaAPI(EcxAPI):
-    def __init__(self, ecx_session):
-        super(slaAPI, self).__init__(ecx_session, 'sppsla')
+class slaAPI(SppAPI):
+    def __init__(self, spp_session):
+        super(slaAPI, self).__init__(spp_session, 'sppsla')
         
     def createSla(self,name):
         slainfo = {"name":name,
@@ -437,11 +446,11 @@ class slaAPI(EcxAPI):
                         "href":sla['links']['self']['href'],
                         "id":sla['id'],
                         "name":sla['name']}]}
-        return self.ecx_session.post(data = applySLAPolicies, path='ngp/application?action=applySLAPolicies')
+        return self.spp_session.post(data = applySLAPolicies, path='ngp/application?action=applySLAPolicies')
     
-class restoreAPI(EcxAPI):
-    def __init__(self, ecx_session):
-        super(restoreAPI, self).__init__(ecx_session, 'ngp/application')
+class restoreAPI(SppAPI):
+    def __init__(self, spp_session):
+        super(restoreAPI, self).__init__(spp_session, 'ngp/application')
         
     def restore(self,subType,database_href,database_version,database_torestore,database_id,restoreName):
         restore = {"subType":subType,
@@ -478,11 +487,11 @@ class restoreAPI(EcxAPI):
                {"site":{"href":"https://172.20.47.47:443/api/site/1000"}}}}],
             "view":"applicationview"}}
 
-        #return EcxAPI(session, 'ngp/application').post(path='?action=restore', data=restore)['response']
-        return self.ecx_session.post(data = restore, path='ngp/application?action=restore')['response']
+        #return sppAPI(session, 'ngp/application').post(path='?action=restore', data=restore)['response']
+        return self.spp_session.post(data = restore, path='ngp/application?action=restore')['response']
     
     def getStatus(self,job_id):
-        jobsession = self.ecx_session.get(path='api/endeavour/jobsession?pageSize=200')['sessions']
+        jobsession = self.spp_session.get(path='api/endeavour/jobsession?pageSize=200')['sessions']
         for session in jobsession:
             if(session['jobId'] == job_id):
                 print(session['status'])
