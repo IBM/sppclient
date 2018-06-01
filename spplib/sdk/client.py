@@ -46,7 +46,7 @@ resource_to_endpoint = {
     'sppsla': 'ngp/slapolicy',
     'site': 'site',
     'appserver': 'ngp/appserver',
-    'apiappsever':'api/appserver',
+    'apiappserver':'api/appserver',
     'corehv': 'api/hypervisor',
     'coresite': 'api/site',
     'spphv': 'ngp/hypervisor',
@@ -402,6 +402,14 @@ class OracleAPI(SppAPI):
         for inst in instances:
             if inst['name'] == name:
                 return inst
+    
+    def get_databases_in_instance(self, instanceid):
+        return self.get(path="oraclehome/%s/database" % instanceid)
+
+    def get_database_copy_versions(self, instanceid, databaseid):
+        return self.get(path="oraclehome/%s/database/%s" % (instanceid, databaseid) + "/version")
+        
+
 class SqlAPI(SppAPI):
     def __init__(self, spp_session):
         super(SqlAPI, self).__init__(spp_session, 'sql')
@@ -431,7 +439,7 @@ class slaAPI(SppAPI):
                    "subpolicy":[{"type":"REPLICATION",
                                  "software":True,"retention":{"age":15},
                                  "trigger":{"frequency":1,"type":"DAILY","activateDate":1524110400000},
-                                 "site":"Primary"}]}}
+                                 "site":"Default"}]}}
         resp = self.post(data = slainfo)
         return resp
     
