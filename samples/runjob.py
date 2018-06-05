@@ -38,7 +38,7 @@ def find_job_from_name():
         session.logout()
         sys.exit(2)
     except client.requests.exceptions.HTTPError as err:
-        print err.response.content
+        print(err.response.content)
         session.logout()
         sys.exit(3)
 

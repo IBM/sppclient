@@ -1,38 +1,43 @@
 # sppclient
 This repo holds two components.
 
-An SDK that can be used by anyone interested in integrating ECX operations in their workflow.
-A command line utility with which ECX operations can be performed.
+An SDK that can be used by anyone interested in integrating SPP operations in their workflow.
+A command line utility with which SPP operations can be performed.
 Installation
 For now, directly install into a local virtual env:
 
 # clone the project and change into the directory.
 $ git clone https://github.com/sppautomation/sppclient.git
-$ cd ecxlib
+$ cd spplib
 
 # Create a virtual environment
-$ python3 -m venv $HOME/venv/ecxlib
+$ python3 -m venv $HOME/venv/spplib
 
 # Install the library
-$ $HOME/venv/ecxlib/bin/pip install -e .
+$ $HOME/venv/spplib/bin/pip install -e .
 
-$ export PATH=$PATH:$HOME/venv/ecxlib/bin
+$ export PATH=$PATH:$HOME/venv/spplib/bin
 At this point, the library can be used.
 
 Usage
-$ ecxcli --help
+$ sppcli --help
 
-# This connects to ECX on localhost.
-$ ecxcli --user admin --passwd <PASSWORD> job list
+# This connects to SPP on localhost.
+$ sppcli --user admin --passwd <PASSWORD> job list
 
 # To connect to a different host. Default user is "admin".
-$ ecxcli --url https://1.2.3.4:8443 --passwd <PASSWORD> job list
+$ sppcli --url https://1.2.3.4:8443 --passwd <PASSWORD> job list
 
-$ ecxcli job list
+$ sppcli job list
 
-$ ecxcli job run --mon <ID>
-Notes
-After a successful login, the command "remembers" the login session so there is no need to pass user name and password with every run.
-Known Issues
-When "https" URL is used, there are some warnings displayed on the console. We need to find a way to get rid of them.
-Need to add job session cleanup actions to the JobAPI
+$ sppcli job run --mon <ID>
+
+# Sample commands to run scrips.
+
+$ python3 script.py --h (This command provides a list of input parameters needed to run the script)
+
+$ python3 createsite.py --host="https://x.x.x.x" --user="admin" --pass="password" --sitename="samplesite" sitedesc="This is a sample site"
+
+$ python3 runjob.py --host="https://x.x.x.x" --user="admin" --pass="password" --jobname="samplejob"
+
+
