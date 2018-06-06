@@ -409,6 +409,23 @@ class OracleAPI(SppAPI):
     def get_database_copy_versions(self, instanceid, databaseid):
         return self.get(path="oraclehome/%s/database/%s" % (instanceid, databaseid) + "/version")
         
+class VmwareAPI(SppAPI):
+    def __init__(self, spp_session):
+        super(VmwareAPI, self).__init__(spp_session, 'spphv')
+        
+    def get_instances(self):
+        return self.get(path="/vm")
+    
+    def get_vminstance(self,vmwares,name):
+        for vm in vmwares['vms']:
+            if vm['name'] == name:
+                return vm
+
+    def get_databases_in_instance(self, instanceid):
+        return self.get(path="oraclehome/%s/database" % instanceid)
+
+    def get_database_copy_versions(self, instanceid, databaseid):
+        return self.get(path="oraclehome/%s/database/%s" % (instanceid, databaseid) + "/version")
 
 class SqlAPI(SppAPI):
     def __init__(self, spp_session):
@@ -455,6 +472,19 @@ class slaAPI(SppAPI):
                         "id":sla['id'],
                         "name":sla['name']}]}
         return self.spp_session.post(data = applySLAPolicies, path='ngp/application?action=applySLAPolicies')
+
+    def assign_hypervisorsla(self,instance,sla,subtype):
+        applySLAPolicies = {"subtype":subtype,
+                "version":"1.0",
+                "resources":[{
+                    "href":instance['links']['self']['href'],
+                    "id":instance['id'],
+                    "metadataPath":instance['metadataPath']}],
+                "slapolicies":[{
+                    "href":sla['links']['self']['href'],
+                    "id":sla['id'],
+                    "name":sla['name']}]}
+        return self.spp_session.post(data = applySLAPolicies, path='ngp/hypervisor?action=applySLAPolicies')
     
 class restoreAPI(SppAPI):
     def __init__(self, spp_session):
