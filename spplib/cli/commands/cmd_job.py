@@ -84,7 +84,7 @@ def format_last_run_time(run_time):
 @cli.command()
 @util.pass_context
 def list(ctx, **kwargs):
-    jobs = JobAPI(ecx_session=ctx.ecx_session).list()
+    jobs = JobAPI(spp_session=ctx.spp_session).list()
     if ctx.json:
         ctx.print_response(jobs)
         return
@@ -101,7 +101,7 @@ def list(ctx, **kwargs):
 @click.argument('jobid', type=click.INT)
 @util.pass_context
 def delete(ctx, jobid, **kwargs):
-    resp = JobAPI(ecx_session=ctx.ecx_session).delete(jobid)
+    resp = JobAPI(spp_session=ctx.spp_session).delete(jobid)
     if resp:
         ctx.print_response(resp)
 
@@ -109,7 +109,7 @@ def delete(ctx, jobid, **kwargs):
 @click.argument('jobid', type=click.INT)
 @util.pass_context
 def info(ctx, jobid, **kwargs):
-    resp = JobAPI(ecx_session=ctx.ecx_session).get(jobid)
+    resp = JobAPI(spp_session=ctx.spp_session).get(jobid)
     ctx.print_response(resp)
 
 @cli.command()
@@ -118,7 +118,7 @@ def info(ctx, jobid, **kwargs):
 @click.argument('jobid', type=click.INT)
 @util.pass_context
 def run(ctx, jobid, **kwargs):
-    jobapi = JobAPI(ecx_session=ctx.ecx_session)
+    jobapi = JobAPI(spp_session=ctx.spp_session)
     job = jobapi.run(jobid)
     if kwargs['mon']:
         monitor(jobapi, job, kwargs['i'])

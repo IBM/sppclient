@@ -21,7 +21,7 @@ def cli(ctx, **kwargs):
 def list(ctx, **kwargs):
     print()
 
-    resp = ctx.ecx_session.get(restype=RESTYPE)
+    resp = ctx.spp_session.get(restype=RESTYPE)
     sla_policies = resp['slapolicies']
 
     if ctx.json:
@@ -69,12 +69,12 @@ sla_req_template = """
 @click.argument('name')
 def create(ctx, name):
     reqdata_str = sla_req_template.format(name=name)
-    resp = ctx.ecx_session.post(restype=RESTYPE, data=json.loads(reqdata_str))
+    resp = ctx.spp_session.post(restype=RESTYPE, data=json.loads(reqdata_str))
 
 @cli.command()
 @util.pass_context
 @click.argument('name')
 def delete(ctx, name):
-    ctx.ecx_session.delete(restype=RESTYPE, resid=name)
+    ctx.spp_session.delete(restype=RESTYPE, resid=name)
 
 

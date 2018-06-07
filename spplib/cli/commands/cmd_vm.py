@@ -14,8 +14,8 @@ def cli(ctx, **kwargs):
 
     pass
 
-def get_sla_info(ecx_session):
-    sla_policies = ecx_session.get(restype='sla')['slapolicies']
+def get_sla_info(spp_session):
+    sla_policies = spp_session.get(restype='sla')['slapolicies']
 
     return dict([(int(x['id']), x['name']) for x in sla_policies]) 
 
@@ -29,9 +29,9 @@ def search(ctx, pattern):
     qparams = {'resourceType': 'vm', 'from': 'hlo', 'pageSize': '500'}
     data = {'name': pattern, 'hypervisorType': 'vmware'}
 
-    sla_info = get_sla_info(ctx.ecx_session)
+    sla_info = get_sla_info(ctx.spp_session)
 
-    resp = ctx.ecx_session.post(restype='hypervisor', path='search', data=data, params=qparams)
+    resp = ctx.spp_session.post(restype='hypervisor', path='search', data=data, params=qparams)
 
     table_info = []
     for vm in resp['vms']:
