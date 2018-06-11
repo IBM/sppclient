@@ -426,6 +426,26 @@ class VmwareAPI(SppAPI):
     def get_database_copy_versions(self, instanceid, databaseid):
         return self.get(path="oraclehome/%s/database/%s" % (instanceid, databaseid) + "/version")
 
+class HypervAPI(SppAPI):
+    def __init__(self, spp_session):
+        super(HypervAPI, self).__init__(spp_session, 'spphv')
+        
+    def get_instances(self):
+        return self.get(path="/vm")
+    
+    def get_hypervinstance(self,hypervs,name):
+        for hyperv in hypervs['vms']:
+            if hyperv['name'] == name:
+                return hyperv
+
+    def get_databases_in_instance(self, instanceid):
+        return self.get(path="oraclehome/%s/database" % instanceid)
+
+    def get_database_copy_versions(self, instanceid, databaseid):
+        return self.get(path="oraclehome/%s/database/%s" % (instanceid, databaseid) + "/version")
+
+
+
 class SqlAPI(SppAPI):
     def __init__(self, spp_session):
         super(SqlAPI, self).__init__(spp_session, 'sql')
@@ -484,6 +504,7 @@ class slaAPI(SppAPI):
                     "id":sla['id'],
                     "name":sla['name']}]}
         return self.spp_session.post(data = applySLAPolicies, path='ngp/hypervisor?action=applySLAPolicies')
+
     
 class restoreAPI(SppAPI):
     def __init__(self, spp_session):
@@ -526,6 +547,47 @@ class restoreAPI(SppAPI):
 
         #return sppAPI(session, 'ngp/application').post(path='?action=restore', data=restore)['response']
         return self.spp_session.post(data = restore, path='ngp/application?action=restore')['response']
+
+    def restoreHyperV(self,subType, hyperv_href, hyperv_name, hyperv_id, hyperv_version):
+        restore = { "subType":subType,
+            "spec":{
+                "source":[{
+                        "href":hyperv_href,
+                        "metadata":{
+                            "name":hyperv_name
+                        },
+                        "resourceType":"vm",
+                        "id":hyperv_id,
+                        "include":True,
+                        "version":{
+                            "href":hyperv_version,
+                            "metadata":{
+                                "useLatest":True,
+                                "name":"Use Latest"}}}],
+                "subpolicy":[{
+                        "type":"IV",
+                        "destination":{
+                            "systemDefined":True},
+                "source":{"copy":{"site":{
+                            "href":"https://172.20.239.94/api/site/1000"
+                        }
+                    }
+                },
+                "option":{
+                    "protocolpriority":"iSCSI",
+                    "poweron":False,
+                    "continueonerror":True,
+                    "autocleanup":True,
+                    "allowsessoverwrite":True,
+                    "mode":"test",
+                    "vmscripts":False,
+                    "restorevmtag":True,
+                    "update_vmx":True }}]},
+                    "script":{}
+                };
+        return self.spp_session.post(data = restore, path='ngp/hypervisor?action=restore')['response']
+
+
     
     def getStatus(self,job_id):
         jobsession = self.spp_session.get(path='api/endeavour/jobsession?pageSize=200')['sessions']
