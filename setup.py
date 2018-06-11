@@ -14,22 +14,22 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(
-    name='ecxlib',
+    name='sppclient',
 
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version='0.42',
+    version='0.55',
 
-    description="A client for Catalogic Software's ECX. ",
+    description="A client for SPP",
     long_description=long_description,
 
     # The project's main homepage.
-    url='',
+    url='https://github.com/sppautomation/sppclient',
 
     # Author details
-    author='Raghuram Devarakonda',
-    author_email='draghuram@gmail.com',
+    author='Ben Jones',
+    author_email='ben.jones@ibm.com',
 
     # Choose your license
     license='Apache License 2.0',
@@ -86,7 +86,7 @@ setup(
     # pip to create the appropriate form of executable for the target platform.
     entry_points={
         'console_scripts': [
-            'ecxcli=ecxlib.cli.ecxcli:main',
+            'sppcli=spplib.cli.sppcli:main',
         ],
     },
 )

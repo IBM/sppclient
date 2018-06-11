@@ -22,6 +22,6 @@ def cli(ctx, **kwargs):
 @click.option('--ofile', type=click.STRING, help='Output file name for logs archive.')
 @util.pass_context
 def download(ctx, **kwargs):
-    logapi = LogAPI(ecx_session=ctx.ecx_session)
+    logapi = LogAPI(spp_session=ctx.spp_session)
     outfile = logapi.download_logs(kwargs['ofile'])
     click.echo("Log archive: %s" % outfile)

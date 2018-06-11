@@ -1,5 +1,5 @@
 # Script to call license installation API for SPP
-# Be sure new license file is in /opt/virgo/repository/ecx-usr/
+# Be sure new license file is in /opt/virgo/repository/spp-usr/
 # Use spplicinstall.py -h for help
 # example:
 # python spplicinstall.py --host="https://172.20.58.59"

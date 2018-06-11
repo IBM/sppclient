@@ -2,9 +2,9 @@
 import click
 from tabulate import tabulate
 
-from ecxclient.cli import util
+from sppclient.cli import util
 
-from spplib.sdk.client import EcxAPI
+from spplib.sdk.client import SppAPI
 from spplib.sdk.client import AssociationAPI
 from spplib.sdk.client import resource_to_listfield
 
@@ -24,7 +24,7 @@ def cli(ctx, type, endpoint, **kwargs):
 @click.option('--listfield', help='Name of the field containing list of resources.')
 @util.pass_context
 def list(ctx, **kwargs):
-    resp = ctx.ecx_session.get(restype=ctx.restype, endpoint=ctx.endpoint)
+    resp = ctx.spp_session.get(restype=ctx.restype, endpoint=ctx.endpoint)
 
     list_field = kwargs.get('listfield') or resource_to_listfield.get(ctx.restype) or (ctx.restype + 's')
 
@@ -57,14 +57,14 @@ def list(ctx, **kwargs):
 @click.argument('id', type=click.INT)
 @util.pass_context
 def info(ctx, id, **kwargs):
-    resp = ctx.ecx_session.get(restype=ctx.restype, resid=id, endpoint=ctx.endpoint)
+    resp = ctx.spp_session.get(restype=ctx.restype, resid=id, endpoint=ctx.endpoint)
     ctx.print_response(resp)
 
 @cli.command()
 @click.argument('id', type=click.INT)
 @util.pass_context
 def usedby(ctx, id, **kwargs):
-    resp = AssociationAPI(ecx_session=ctx.ecx_session).get_using_resources(ctx.restype, id)["resources"]
+    resp = AssociationAPI(spp_session=ctx.spp_session).get_using_resources(ctx.restype, id)["resources"]
     if ctx.json:
         ctx.print_response(resp)
         return
@@ -79,6 +79,6 @@ def usedby(ctx, id, **kwargs):
 @click.argument('id', type=click.INT)
 @util.pass_context
 def delete(ctx, id, **kwargs):
-    resp = ctx.ecx_session.delete(restype=ctx.restype, resid=id, endpoint=ctx.endpoint)
+    resp = ctx.spp_session.delete(restype=ctx.restype, resid=id, endpoint=ctx.endpoint)
     if resp:
         ctx.print_response(resp)

@@ -1,72 +1,53 @@
+# sppclient
 
-============
- ECX Client
-============
-
-scdsd
-
-dsc
-sdcs
+sppclient is a Python module that aims to simplify interaction with SPP's REST API.
 
 
-This project aims to build a Python client for Catalogic Software's 
-`ECX <https://catalogicsoftware.com/products/ecx/>`_ product. 
 
-This repo holds two components. 
+This module can be used for automation of testing procedures or tasks on the SPP appliance
 
-- An SDK that can be used by anyone interested in integrating ECX
-  operations in their workflow.
 
-- A command line utility with which ECX operations can be performed.
 
-Installation
-============
+The module is registered on PyPI and can be installed with:
 
-For now, directly install into a local virtual env:
-::
 
-    # clone the project and change into the directory.
-    $ git clone git@bitbucket.org:draghuram/ecxlib.git
-    $ cd ecxlib
+ $ pip install sppclient
 
-    # Create a virtual environment
-    $ python3 -m venv $HOME/venv/ecxlib
 
-    # Install the library
-    $ $HOME/venv/ecxlib/bin/pip install -e .
+# Usage
 
-    $ export PATH=$PATH:$HOME/venv/ecxlib/bin
+When writing a script using sppclient import with:
 
-At this point, the library can be used.
 
-Usage
-=====
+ import spplib.sdk.client as client
+ 
+ 
+To create a session object:
 
-::
 
-    $ ecxcli --help
-    
-    # This connects to ECX on localhost.
-    $ ecxcli --user admin --passwd <PASSWORD> job list
-    
-    # To connect to a different host. Default user is "admin".
-    $ ecxcli --url https://1.2.3.4:8443 --passwd <PASSWORD> job list
+ session = client.SppSession("sppHost", "sppUsername", "sppPassword")
+ 
+ 
+ session.login()
+ 
 
-    $ ecxcli job list
+To interact with SPP API:
 
-    $ ecxcli job run --mon <ID>
-    
-Notes
-=====
 
-- After a successful login, the command "remembers" the login session
-  so there is no need to pass user name and password with every
-  run.
+ client.SppAPI(session, 'resource_endpoint').get()
 
-Known Issues
-============
 
-- When "https" URL is used, there are some warnings displayed on the
-  console. We need to find a way to get rid of them.
+# Sample commands to run included sample scripts.
 
-- Need to add job session cleanup actions to the JobAPI
+$ python3 script.py -h (This command provides a list of input parameters needed to run the script)
+
+
+$ python3 createsite.py --host="https://x.x.x.x:8443" --user="admin" --pass="password" --sitename="samplesite" --sitedesc="This is a sample site"
+
+
+
+$ python3 runjob.py --host="https://x.x.x.x:8443" --user="admin" --pass="password" --jobname="samplejob"
+
+
+
+<sub>All materials are provided for informational purposes only and officially not supported, and is provided AS IS without warranty of any kind, express or implied. IBM shall not be responsible for any damages arising out of the use of, or otherwise related to, these materials.  Nothing contained in these materials is intended to, nor shall have the effect of, creating any warranties representations from IBM or its suppliers or licensors, or altering the terms and conditions of the applicable license agreement  governing the use of IBM software.</sub>

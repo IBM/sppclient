@@ -12,8 +12,8 @@ import traceback
 import click
 from requests.exceptions import HTTPError
 
-from ecxlib.sdk import client
-from ecxlib.cli import util
+from spplib.sdk import client
+from spplib.cli import util
 
 cmd_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), 'commands'))
 
@@ -31,7 +31,7 @@ class MyCLI(click.MultiCommand):
             if sys.version_info[0] == 2:
                 name = name.encode('ascii', 'replace')
 
-            mod = __import__('ecxlib.cli.commands.cmd_' + name, None, None, ['cli'])
+            mod = __import__('spplib.cli.commands.cmd_' + name, None, None, ['cli'])
         except ImportError:
             logging.error(traceback.format_exc())
             return
@@ -54,34 +54,34 @@ def save_config(username, sessionid):
     parser.write(open(cfgfile, 'w'))
 
 @click.command(cls=MyCLI)
-@click.option('--url', envvar='ECX_URL', default='http://localhost:8082', 
-              metavar='URL', help='ECX url. E.g. https://172.18.0.6.')
-@click.option('--user', envvar='ECX_USER', default='admin', metavar='USERNAME', help='ECX user.')
-@click.option('--passwd', envvar='ECX_PASSWD', default=None, metavar='PASSWORD', help='ECX password.')
+@click.option('--url', envvar='SPP_URL', default='http://localhost:8082', 
+              metavar='URL', help='SPP url. E.g. https://172.18.0.6.')
+@click.option('--user', envvar='SPP_USER', default='admin', metavar='USERNAME', help='SPP user.')
+@click.option('--passwd', envvar='SPP_PASSWD', default=None, metavar='PASSWORD', help='SPP password.')
 @click.option('--json', is_flag=True, help='Show raw json.')
 @click.option('--links', is_flag=True, help='Include links in output. Implies --json option.')
 @click.version_option('0.43')
 @util.pass_context
 def cli(ctx, url, user, passwd, json, links):
-    """ecx is a command line tool with which ECX operations
+    """spp is a command line tool with which SPP operations
     can be carried out.
     """
 
     if user and passwd:
-        ctx.ecx_session = client.EcxSession(url, username=user, password=passwd)
-        save_config(user, ctx.ecx_session.sessionid)
+        ctx.spp_session = client.SppSession(url, username=user, password=passwd)
+        save_config(user, ctx.spp_session.sessionid)
     else:
-        ctx.ecx_session = client.EcxSession(url, sessionid=get_existing_session(user))
+        ctx.spp_session = client.SppSession(url, sessionid=get_existing_session(user))
 
     ctx.json = json
     ctx.links = links
     if ctx.links:
         ctx.json = True
 
-# cli = MyCLI(help='Script to perform ECX operations. ')
+# cli = MyCLI(help='Script to perform SPP operations. ')
 
 def init_logging():
-    fd, logfile = tempfile.mkstemp(suffix='.txt', prefix='ecxlib')
+    fd, logfile = tempfile.mkstemp(suffix='.txt', prefix='spplib')
     os.close(fd)
     logging.basicConfig(filename=logfile, level=logging.DEBUG, format='%(asctime)-15s: %(levelname)s: %(message)s')
 
@@ -105,7 +105,7 @@ def main():
 
     init_logging()
 
-    cfgfile = os.path.join(click.get_app_dir("ecxcli"), 'config.ini')
+    cfgfile = os.path.join(click.get_app_dir("sppcli"), 'config.ini')
     cfgdir = os.path.dirname(cfgfile)
     if not os.path.exists(cfgdir):
         os.makedirs(cfgdir)
