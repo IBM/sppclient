@@ -548,7 +548,6 @@ class restoreAPI(SppAPI):
         #return sppAPI(session, 'ngp/application').post(path='?action=restore', data=restore)['response']
         return self.spp_session.post(data = restore, path='ngp/application?action=restore')['response']
 
-<<<<<<< HEAD
     def restoreHyperV(self,subType, hyperv_href, hyperv_name, hyperv_id, hyperv_version):
         restore = { "subType":subType,
             "spec":{
@@ -589,7 +588,7 @@ class restoreAPI(SppAPI):
         return self.spp_session.post(data = restore, path='ngp/hypervisor?action=restore')['response']
 
 
-=======
+
     def restoreLog(self,subType,database_href,database_version,database_torestore,database_id,restoreName,restoreTime):
         restore = {"subType":subType,
            "script":
@@ -626,7 +625,7 @@ class restoreAPI(SppAPI):
                {"site":{"href":"https://172.20.47.47:443/api/site/1000"}}}}],
             "view":"applicationview"}}
         return self.spp_session.post(data = restore, path='ngp/application?action=restore')['response']
->>>>>>> ea7e0a9c7cca5300a60535d9d1372f2e26753b20
+
     
     def getStatus(self,job_id):
         jobsession = self.spp_session.get(path='api/endeavour/jobsession?pageSize=200')['sessions']
