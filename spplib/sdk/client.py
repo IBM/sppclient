@@ -626,6 +626,43 @@ class restoreAPI(SppAPI):
             "view":"applicationview"}}
         return self.spp_session.post(data = restore, path='ngp/application?action=restore')['response']
 
+    def restoreLogOracle(self,subType,database_href,database_version,database_torestore,database_id,restoreName,restoreTime,instanceid,instanceVersion):
+        restore = {"subType":subType,
+           "script":
+           {"preGuest":None,
+            "postGuest":None,
+            "continueScriptsOnError":False},
+           "spec":
+           {"source":[{"href":database_href,
+                       "resourceType":"database",
+                       "include":True,
+                       "version":None,
+                       "metadata":
+                       {"name":database_torestore,
+                       "instanceVersion":instanceVersion,
+                       "instanceId":instanceid},
+                       "id":database_id,
+                       "pointInTime":restoreTime}],
+            "subpolicy":
+            [{"type":"restore",
+              "mode":"test",
+              "destination":
+              {"mapdatabase":{database_href:
+                              {"name":restoreName,
+                               "paths":[]}}},
+              "option":
+              {"autocleanup":None,
+               "allowsessoverwrite":None,
+               "continueonerror":None,
+               "applicationOption":
+               {"overwriteExistingDb":False,
+               "recoveryType":"pitrecovery"}},
+              "source":
+              {"copy":
+               {"site":{"href":"https://172.20.47.47:443/api/site/1000"}}}}],
+            "view":"applicationview"}}
+        return self.spp_session.post(data = restore, path='ngp/application?action=restore')['response']
+
     
     def getStatus(self,job_id):
         jobsession = self.spp_session.get(path='api/endeavour/jobsession?pageSize=200')['sessions']
