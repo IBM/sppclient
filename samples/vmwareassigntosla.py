@@ -1,5 +1,7 @@
 # Script to assign one or more VMWare VMs to an SLA policy in SPP
 # Use vmwareassigntosla.py -h for help
+# command to assign sla to vms: python3 vmwareassigntosla.py --user="admin" --pass="sp3ctrum" --host="https://172.20.2.x" --vms="vm_name" --sla="sla_name"
+# command to unassign sla from vm: python3 vmwareassigntosla.py --user="admin" --pass="sp3ctrum" --host="https://172.20.2.x" --vms="vm_name" 
 
 import json
 import logging
@@ -16,7 +18,7 @@ parser.add_option("--user", dest="username", help="SPP Username")
 parser.add_option("--pass", dest="password", help="SPP Password")
 parser.add_option("--host", dest="host", help="SPP Host, (ex. https://172.20.49.49)")
 parser.add_option("--vms", dest="vms", help="VM name(s) (comma seperated)")
-parser.add_option("--sla", dest="sla", help="SLA Policy Name")
+parser.add_option("--sla", dest="sla", help="SLA Policy Name", default="")
 (options, args) = parser.parse_args()
 if(options.vms is not None):
     options.vms = options.vms.split(",")
@@ -32,6 +34,7 @@ def validate_input():
 
 def get_vm_info():
     vmarray = []
+    emptyarray = []
     for vm in options.vms:
         vmdata = {}
         searchdata = {"name":vm,"hypervisorType":"vmware"}
@@ -50,22 +53,24 @@ def get_vm_info():
     return vmarray
 
 def get_sla_info():
-    slaarray = []
     sladata = {}
-    slapols = client.SppAPI(session, 'sppsla').get()['slapolicies']
-    for sla in slapols:
-        if(sla['name'] == options.sla):
-            sladata['href'] = sla['links']['self']['href']
-            sladata['id'] = sla['id']
-            sladata['name'] = sla['name']
-            slaarray.append(copy.deepcopy(sladata))
-            break
-    if not slaarray:
-        logger.error("No SLA Policy found with name " + options.sla)
-        session.logout()
-        sys.exit(2)
+    if(options.sla != ""):
+        slapols = client.SppAPI(session, 'sppsla').get()['slapolicies']
+        for sla in slapols:
+            if(sla['name'] == options.sla):
+                sladata['href'] = sla['links']['self']['href']
+                sladata['id'] = sla['id']
+                sladata['name'] = sla['name']
+                slaarray.append(copy.deepcopy(sladata))
+                break
+        if not slaarray:
+            logger.error("No SLA Policy found with name " + options.sla)
+            session.logout()
+            sys.exit(2)
+        else:
+            return slaarray
     else:
-        return slaarray
+        return ""
 
 def assign_vms_to_sla():
     assigndata = {}
@@ -75,8 +80,16 @@ def assign_vms_to_sla():
     assigndata['version'] = "1.0"
     assigndata['resources'] = vminfo
     assigndata['slapolicies'] = slainfo
-    resp = client.SppAPI(session, 'spphv').post(path='?action=applySLAPolicies', data=assigndata)
-    logger.info("VMs are now assigned")
+    print("---slaino----")
+    print(assigndata)
+    if(slainfo == ""):
+        assigndata['slapolicies'] = []
+        client.SppAPI(session, 'spphv').post(path='?action=applySLAPolicies', data=assigndata)
+        logger.info("VMs are now unassigned")
+    else:
+
+        resp = client.SppAPI(session, 'spphv').post(path='?action=applySLAPolicies', data=assigndata)
+        logger.info("VMs are now assigned")
 
 validate_input()
 session = client.SppSession(options.host, options.username, options.password)
