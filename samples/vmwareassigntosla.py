@@ -80,8 +80,6 @@ def assign_vms_to_sla():
     assigndata['version'] = "1.0"
     assigndata['resources'] = vminfo
     assigndata['slapolicies'] = slainfo
-    print("---slaino----")
-    print(assigndata)
     if(slainfo == ""):
         assigndata['slapolicies'] = []
         client.SppAPI(session, 'spphv').post(path='?action=applySLAPolicies', data=assigndata)
