@@ -1,4 +1,4 @@
-import configparser
+vmimport configparser
 import json
 import logging
 import os
@@ -548,7 +548,7 @@ class restoreAPI(SppAPI):
         #return sppAPI(session, 'ngp/application').post(path='?action=restore', data=restore)['response']
         return self.spp_session.post(data = restore, path='ngp/application?action=restore')['response']
 
-    def restoreHyperV(self,subType, hyperv_href, hyperv_name, hyperv_id, hyperv_version):
+    def restoreHyperV(self,subType, hyperv_href, hyperv_name, hyperv_id, hyperv_version, site_href):
         restore = { "subType":subType,
             "spec":{
                 "source":[{
@@ -569,7 +569,7 @@ class restoreAPI(SppAPI):
                         "destination":{
                             "systemDefined":True},
                 "source":{"copy":{"site":{
-                            "href":"https://172.20.239.94/api/site/1000"
+                            "href": site_href
                         }
                     }
                 },
