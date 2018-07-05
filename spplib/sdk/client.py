@@ -1,10 +1,12 @@
 import configparser
 import json
+import pprint
 import logging
 import os
 import re
 import tempfile
 import time
+import logging
 
 import requests
 from requests.auth import HTTPBasicAuth
@@ -88,6 +90,12 @@ def build_url(baseurl, restype=None, resid=None, path=None, endpoint=None):
     return url.replace("/api/ngp", "/ngp")
 
 def raise_response_error(r, *args, **kwargs):
+    if r.content:
+        try:
+            logging.info("\n%s",pretty_print(r.json()))
+        except:
+            logging.info("\n%s",r)
+
     r.raise_for_status()
 
 def pretty_print(data):
@@ -104,6 +112,17 @@ def change_password(url, username, password, newpassword):
     conn.headers.update({'Accept': 'application/json'})
     return conn.post("%s/api/endeavour/session?changePassword=true&screenInfo=1" % url, json=data,
                          auth=HTTPBasicAuth(username, password))
+def change_ospassword(url,oldpassword,newpassword):
+    data = {"osOldPassword":oldpassword,
+            "osNewPassword": newpassword,
+            "osConfirmNewPassword":newpassword}
+    conn = requests.Session()
+    conn.verify = False
+    # conn.hooks.update({'response': raise_response_error})
+    # conn.headers.update({'X-Endeavour-Sessionid': self.sessionid})
+    conn.headers.update({'Content-Type': 'application/json'})
+    conn.headers.update({'Accept': 'application/json'})
+    return conn.post("%s/api/endeavour/session?changeOsPassword=true&screenInfo=1" % url, json=data)
     
 class SppSession(object):
     def __init__(self, url, username=None, password=None, sessionid=None):
@@ -145,14 +164,21 @@ class SppSession(object):
             url = build_url(self.api_url, restype, resid, path, endpoint)
 
         # return json.loads(self.conn.get(url, params=params).content)
-        return self.conn.get(url, params=params).json()
+        resp = self.conn.get(url, params=params)
+
+        logging.info("\n \n GET %s", url)
+        logging.info("\n %s \n", resp.status_code)
+        json_resp = resp.json()
+        print_resp = pretty_print(json_resp)
+        logging.info("\n %s \n", print_resp)
+        return resp.json()
 
     def stream_get(self, restype=None, resid=None, path=None, params={}, endpoint=None, url=None, outfile=None):
         if url is None:
             url = build_url(self.api_url, restype, resid, path, endpoint)
 
         r = self.conn.get(url, params=params)
-        logging.info("headers: %s" % r.headers)
+        #logging.info("headers: %s" % r.headers)
 
         # The response header Content-Disposition contains default file name
         #   Content-Disposition: attachment; filename=log_1490030341274.zip
@@ -176,6 +202,9 @@ class SppSession(object):
 
         resp = self.conn.delete(url, params=params)
 
+        logging.info("\n DELETE %s ", url)
+        logging.info("\n %s " , resp.status_code)
+
         # return json.loads(resp.content) if resp.content else None
         return resp.json() if resp.content else None
 
@@ -183,8 +212,14 @@ class SppSession(object):
         if url is None:
             url = build_url(self.api_url, restype, resid, path, endpoint)
 
-        logging.info(json.dumps(data, indent=4))
+        #logging.info(json.dumps(data, indent=4))
         r = self.conn.post(url, json=data, params=params)
+
+        logging.info("\n POST %s", url)
+        logging.info("\n %s \n", pretty_print(data))
+        logging.info("\n %s \n", r.status_code)
+        json_resp = r.json()
+        logging.info("\n %s \n", pretty_print(json_resp))
 
         if r.content:
             return r.json()
@@ -195,8 +230,14 @@ class SppSession(object):
         if url is None:
             url = build_url(self.api_url, restype, resid, path, endpoint)
 
-        logging.info(json.dumps(data, indent=4))
+        #logging.info(json.dumps(data, indent=4))
         r = self.conn.put(url, json=data, params=params)
+
+        logging.info("\n PUT %s", url)
+        logging.info("\n %s \n", pretty_print(data))
+        logging.info("\n %s \n", r.status_code)
+        json_resp = r.json()
+        logging.info("\n %s \n", pretty_print(json_resp))
 
         if r.content:
             return r.json()
