@@ -53,7 +53,8 @@ resource_to_endpoint = {
     'spphv': 'ngp/hypervisor',
     'storage': 'ngp/storage',
     'corestorage': 'api/storage',
-    'endeavour': 'api/endeavour'
+    'endeavour': 'api/endeavour',
+    'search' : 'api/endeavour/search'
 }
 
 resource_to_listfield = {
@@ -92,15 +93,16 @@ def build_url(baseurl, restype=None, resid=None, path=None, endpoint=None):
 def raise_response_error(r, *args, **kwargs):
     if r.content:
         try:
-            logging.info("\n%s",pretty_print(r.json()))
+            #logging.info("\n%s",pretty_print(r.json()))
+            print("\n%s", r.json())
         except:
-            logging.info("\n%s",r)
+            #logging.info("\n%s",r)
+            print("\n%s",r)
 
     r.raise_for_status()
 
 def pretty_print(data):
     return logging.info(json.dumps(data, sort_keys=True,indent=4, separators=(',', ': ')))
-
 
 def change_password(url, username, password, newpassword):
     data = {'newPassword': newpassword}
@@ -112,6 +114,7 @@ def change_password(url, username, password, newpassword):
     conn.headers.update({'Accept': 'application/json'})
     return conn.post("%s/api/endeavour/session?changePassword=true&screenInfo=1" % url, json=data,
                          auth=HTTPBasicAuth(username, password))
+
 def change_ospassword(url,oldpassword,newpassword):
     data = {"osOldPassword":oldpassword,
             "osNewPassword": newpassword,
@@ -166,11 +169,11 @@ class SppSession(object):
         # return json.loads(self.conn.get(url, params=params).content)
         resp = self.conn.get(url, params=params)
 
-        logging.info("\n \n GET %s", url)
-        logging.info("\n %s \n", resp.status_code)
-        json_resp = resp.json()
-        print_resp = pretty_print(json_resp)
-        logging.info("\n %s \n", print_resp)
+        # logging.info("\n \n GET %s", url)
+        # logging.info("\n %s \n", resp.status_code)
+        # json_resp = resp.json()
+        # print_resp = pretty_print(json_resp)
+        # logging.info("\n %s \n", print_resp)
         return resp.json()
 
     def stream_get(self, restype=None, resid=None, path=None, params={}, endpoint=None, url=None, outfile=None):
@@ -202,8 +205,8 @@ class SppSession(object):
 
         resp = self.conn.delete(url, params=params)
 
-        logging.info("\n DELETE %s ", url)
-        logging.info("\n %s " , resp.status_code)
+        # logging.info("\n DELETE %s ", url)
+        # logging.info("\n %s " , resp.status_code)
 
         # return json.loads(resp.content) if resp.content else None
         return resp.json() if resp.content else None
@@ -215,11 +218,11 @@ class SppSession(object):
         #logging.info(json.dumps(data, indent=4))
         r = self.conn.post(url, json=data, params=params)
 
-        logging.info("\n POST %s", url)
-        logging.info("\n %s \n", pretty_print(data))
-        logging.info("\n %s \n", r.status_code)
+        # logging.info("\n POST %s", url)
+        # logging.info("\n %s \n", pretty_print(data))
+        # logging.info("\n %s \n", r.status_code)
         json_resp = r.json()
-        logging.info("\n %s \n", pretty_print(json_resp))
+        # logging.info("\n %s \n", pretty_print(json_resp))
 
         if r.content:
             return r.json()
@@ -233,17 +236,16 @@ class SppSession(object):
         #logging.info(json.dumps(data, indent=4))
         r = self.conn.put(url, json=data, params=params)
 
-        logging.info("\n PUT %s", url)
-        logging.info("\n %s \n", pretty_print(data))
-        logging.info("\n %s \n", r.status_code)
+        # logging.info("\n PUT %s", url)
+        # logging.info("\n %s \n", pretty_print(data))
+        # logging.info("\n %s \n", r.status_code)
         json_resp = r.json()
-        logging.info("\n %s \n", pretty_print(json_resp))
+        # logging.info("\n %s \n", pretty_print(json_resp))
 
         if r.content:
             return r.json()
 
         return {}  
-    
 
 class SppAPI(object):
     def __init__(self, spp_session, restype=None, endpoint=None):
@@ -273,8 +275,6 @@ class SppAPI(object):
         return self.spp_session.put(restype=self.restype, resid=resid, path=path, data=data,
                                      params=params, url=url)
     
-        
-
 class JobAPI(SppAPI):
     def __init__(self, spp_session):
         super(JobAPI, self).__init__(spp_session, 'job')
@@ -323,12 +323,12 @@ class JobAPI(SppAPI):
         # in response. Rather, we need to query to get it.
         for i in range(5):
             live_sessions = self.spp_session.get(url=jobrun['links']['livejobsessions']['href'])
-            pretty_print(live_sessions)
+            #pretty_print(live_sessions)
 
             try:
                 jobrun["curr_jobsession_id"] = live_sessions["sessions"][0]["id"]
             except Exception:
-                logging.info("Attempt {}: Error in getting live job sessions".format(i))
+                #logging.info("Attempt {}: Error in getting live job sessions".format(i))
                 time.sleep(2)
 
         # In case, we failed in finding job session ID, we don't throw exception
@@ -337,14 +337,14 @@ class JobAPI(SppAPI):
         return jobrun
 
     def get_log_entries(self, jobsession_id, page_size=1000, page_start_index=0):
-        logging.info("*** get_log_entries: jobsession_id = %s, page_start_index: %s ***" % (jobsession_id, page_start_index))
+        #logging.info("*** get_log_entries: jobsession_id = %s, page_start_index: %s ***" % (jobsession_id, page_start_index))
 
         resp = self.spp_session.get(restype='log', path='job',
                                     params={'pageSize': page_size, 'pageStartIndex': page_start_index,
                                             'sort': '[{"property":"logTime","direction":"ASC"}]',
                                             'filter': '[{"property":"jobsessionId","value":"%s"}]'%jobsession_id})
 
-        logging.info("*** get_log_entries:     Received %d entries..." % len(resp['logs']))
+        #logging.info("*** get_log_entries:     Received %d entries..." % len(resp['logs']))
 
         return resp['logs']
     
@@ -467,6 +467,31 @@ class VmwareAPI(SppAPI):
     def get_database_copy_versions(self, instanceid, databaseid):
         return self.get(path="oraclehome/%s/database/%s" % (instanceid, databaseid) + "/version")
 
+    def apply_options(self, subtype, resource_href, vm_id, metadataPath, username, password):
+        
+        applyoptionsdata = {
+            "subtype": subtype,
+            "version":"1.0",
+            "resources":[{ 
+                    "href":resource_href,
+                    "id":vm_id,
+                    "metadataPath": metadataPath }],
+            "options":{
+                    "makeApplicationConsistent":True,
+                    "snapshotRetries":1,
+                    "fullcopymethod":"vadp",
+                    "proxySelection":"",
+                    "skipReadonlyDS":True,
+                    "skipIAMounts":True,
+                    "enableFH":True,
+                    "enableLogTruncate":False,
+                    "username": username,
+                    "password":password 
+                    }
+                    }
+
+        return self.spp_session.post(data= applyoptionsdata, path='ngp/hypervisor?action=applyOptions')
+
 class HypervAPI(SppAPI):
     def __init__(self, spp_session):
         super(HypervAPI, self).__init__(spp_session, 'spphv')
@@ -485,7 +510,30 @@ class HypervAPI(SppAPI):
     def get_database_copy_versions(self, instanceid, databaseid):
         return self.get(path="oraclehome/%s/database/%s" % (instanceid, databaseid) + "/version")
 
+    def apply_options(self, subtype, resource_href, vm_id, metadataPath, username, password):
+        
+        applyoptionsdata = {
+            "subtype": subtype,
+            "version":"1.0",
+            "resources":[{ 
+                    "href":resource_href,
+                    "id":vm_id,
+                    "metadataPath": metadataPath }],
+            "options":{
+                    "makeApplicationConsistent":True,
+                    "snapshotRetries":2,
+                    "fullcopymethod":"vadp",
+                    "proxySelection":"",
+                    "skipReadonlyDS":True,
+                    "skipIAMounts":True,
+                    "enableFH":True,
+                    "enableLogTruncate":False,
+                    "username": username,
+                    "password":password 
+                    }
+                    }
 
+        return self.spp_session.post(data= applyoptionsdata, path='ngp/hypervisor?action=applyOptions')
 
 class SqlAPI(SppAPI):
     def __init__(self, spp_session):
@@ -508,7 +556,17 @@ class SqlAPI(SppAPI):
 class slaAPI(SppAPI):
     def __init__(self, spp_session):
         super(slaAPI, self).__init__(spp_session, 'sppsla')
-        
+    
+    def get_slas(self):
+        return self.spp_session.get(path="api/spec/storageprofile")
+    
+    def getsla(self, slas, name):
+        for sla in slas:
+            #slaname = sla['name']
+            if sla['name'] == name:
+                return sla
+
+
     def createSla(self,name):
         slainfo = {"name":name,
            "version":"1.0",
@@ -533,19 +591,19 @@ class slaAPI(SppAPI):
                         "name":sla['name']}]}
         return self.spp_session.post(data = applySLAPolicies, path='ngp/application?action=applySLAPolicies')
 
-    def assign_hypervisorsla(self,instance,sla,subtype):
+    def assign_hypervisorsla(self, instance_href, instance_id, instance_metadataPath, sla_href,sla_id, sla_name, subtype):
         applySLAPolicies = {"subtype":subtype,
                 "version":"1.0",
                 "resources":[{
-                    "href":instance['links']['self']['href'],
-                    "id":instance['id'],
-                    "metadataPath":instance['metadataPath']}],
+                    "href":instance_href,
+                    "id":instance_id,
+                    "metadataPath":instance_metadataPath
+                    }],
                 "slapolicies":[{
-                    "href":sla['links']['self']['href'],
-                    "id":sla['id'],
-                    "name":sla['name']}]}
+                    "href":sla_href,
+                    "id":sla_id,
+                    "name":sla_name}]}
         return self.spp_session.post(data = applySLAPolicies, path='ngp/hypervisor?action=applySLAPolicies')
-
     
 class restoreAPI(SppAPI):
     def __init__(self, spp_session):
@@ -630,6 +688,30 @@ class restoreAPI(SppAPI):
 
 
 
+    def fileRestoreVM(self,sourcehref, resourcetype, copylink, copyversion):
+        restore = {"spec":{
+                "view":"",
+                "source":[{
+                    "href": sourcehref,
+                    "resourceType": resourcetype,
+                    "include":True,
+                    "version":{
+                        "copy":{
+                            "href":copylink
+                        },
+                            "href":copyversion
+                    }
+                }],
+            "subpolicy":[{
+                "option":{
+                        "overwriteExistingFile":True,
+                        "filePath":""
+                        }
+                }]
+            }
+        }
+        return self.spp_session.post(data=restore, path='ngp/hypervisor?action=restorefile')['response']
+
     def restoreLog(self,subType,database_href,database_version,database_torestore,database_id,restoreName,restoreTime):
         restore = {"subType":subType,
            "script":
@@ -704,7 +786,6 @@ class restoreAPI(SppAPI):
             "view":"applicationview"}}
         return self.spp_session.post(data = restore, path='ngp/application?action=restore')['response']
 
-    
     def getStatus(self,job_id):
         jobsession = self.spp_session.get(path='api/endeavour/jobsession?pageSize=200')['sessions']
         for session in jobsession:
@@ -714,7 +795,14 @@ class restoreAPI(SppAPI):
                 break
         return currentstatus
     
+class searchAPI(SppAPI):
 
-
+    def __init__(self, spp_session):
         
-    
+        super(searchAPI, self).__init__(spp_session, 'search')
+
+    def get_fileRestoreOptions(self):       
+        return self.get(path='?filter=[{"property":"*","op":"=","value":"fstabfile.txt"}]')
+
+    def get_HVfileRestoreOptions(self):       
+        return self.get(path='?filter=[{"property":"*","op":"=","value":"fstabfile.txt"}]')
