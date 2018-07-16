@@ -604,6 +604,16 @@ class slaAPI(SppAPI):
                     "id":sla_id,
                     "name":sla_name}]}
         return self.spp_session.post(data = applySLAPolicies, path='ngp/hypervisor?action=applySLAPolicies')
+
+class ScriptAPI(SppAPI):
+    def __init__(self, spp_session):
+        super(ScriptAPI, self).__init__(spp_session, 'api/script')
+     
+    def upload_script(self,data,files):
+        headers = {'X-Endeavour-sessionid':self.spp_session.sessionid,'Accept':'*/*'}
+        url = build_url(self.spp_session.api_url,'api/script')
+        resp = requests.post(url,headers=headers,data = data, files=files,verify=False)
+        return resp
     
 class restoreAPI(SppAPI):
     def __init__(self, spp_session):
@@ -784,6 +794,57 @@ class restoreAPI(SppAPI):
               {"copy":
                {"site":{"href":"https://172.20.47.47:443/api/site/1000"}}}}],
             "view":"applicationview"}}
+        return self.spp_session.post(data = restore, path='ngp/application?action=restore')['response']
+
+    def restore_script(self,subType,scriptserver,server_add,script_href,script_name,database_href,database_version,database_torestore,instance_version,instance_id,databaseid,restoreName):
+        restore = {"subType":subType,
+        "script": {
+        "preGuest": None,
+        "postGuest": {
+            "appserver": {
+                "href": scriptserver,
+                "name": server_add},
+            "script": {
+                "href": script_href,
+                "args": [],
+                "metadata": {
+                    "name": script_name}}},
+        "continueScriptsOnError": False},
+        "spec": {
+        "source": [{
+            "href": database_href,
+            "resourceType": "database",
+            "include": True,
+            "version": {
+                "href": database_version,
+                "metadata": {
+                    "useLatest": True}},
+            "metadata": {
+                "name": database_torestore,
+                "instanceVersion": instance_version,
+                "instanceId": instance_id,
+                "useLatest": True},
+            "id": databaseid}],
+        "subpolicy": [{
+            "type": "restore",
+            "mode": "test",
+            "destination": {
+                "mapdatabase": {
+                    database_href: {
+                        "name": restoreName,
+                        "paths": []}}},
+            "option": {
+                "autocleanup": True,
+                "allowsessoverwrite": True,
+                "continueonerror": True,
+                "applicationOption": {
+                    "overwriteExistingDb": False,
+                    "recoveryType": "recovery"}},
+            "source": {
+                "copy": {
+                    "site": {
+                        "href": "https://172.20.2.134/api/site/1000"},
+                    "isOffload": None}}}],"view": "applicationview"}}
         return self.spp_session.post(data = restore, path='ngp/application?action=restore')['response']
 
     def getStatus(self,job_id):
