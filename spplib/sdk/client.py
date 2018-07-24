@@ -696,7 +696,55 @@ class restoreAPI(SppAPI):
                 };
         return self.spp_session.post(data = restore, path='ngp/hypervisor?action=restore')['response']
 
+    def restore_Old_HyperV(self, subType, hyperv_href, hyperv_name, hyperv_id, hyperv_version, site_href):
+        restore = {"subType": subType,
+            "spec":
+                {"source":
+                [{ 
+                    "href":hyperv_href,
+                    "metadata":{
+                        "name":hyperv_name
+                        },
+                    "resourceType":"vm",
+                    "id":hyperv_id,
+                    "include":True,
+                    "version":{
+                        "href":hyperv_version,
+                        "metadata":{
+                            "useLatest":True,
+                            "name":"Use Latest"
+                            }}}],
+                            "subpolicy":[{
+                            "type":"IV",
+                            "destination":{
+                                "systemDefined":True,
+                                "mapvirtualnetwork":{},
+                                "mapRRPdatastore":{},
+                                "mapsubnet":{}},
+                            "source":{
+                                "copy":{
+                                    "site":{
+                                        "href":site_href
+                                }}},
+                            "option":{
+                                "poweron":False,
+                                "allowvmoverwrite":False,
+                                "continueonerror":True,
+                                "autocleanup":True,
+                                "allowsessoverwrite":True,
+                                "restorevmtag":True,
+                                "update_vmx":True,
+                                "mode":"test",
+                                "vmscripts":False,
+                                "protocolpriority":"iSCSI"
+                                }}]},
+                            "script":{
+                                "preGuest":None,
+                                "postGuest":None,
+                                "continueScriptsOnError":False
+                                }};
 
+        return self.spp_session.post(data = restore, path='ngp/hypervisor?action=restore')['response']
 
     def fileRestoreVM(self,sourcehref, resourcetype, copylink, copyversion):
         restore = {"spec":{
