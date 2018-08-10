@@ -566,7 +566,6 @@ class slaAPI(SppAPI):
             if sla['name'] == name:
                 return sla
 
-
     def createSla(self,name):
         slainfo = {"name":name,
            "version":"1.0",
@@ -906,12 +905,8 @@ class restoreAPI(SppAPI):
     
 class searchAPI(SppAPI):
 
-    def __init__(self, spp_session):
-        
+    def __init__(self, spp_session):       
         super(searchAPI, self).__init__(spp_session, 'search')
 
-    def get_fileRestoreOptions(self):       
-        return self.get(path='?filter=[{"property":"*","op":"=","value":"fstabfile.txt"}]')
-
-    def get_HVfileRestoreOptions(self):       
-        return self.get(path='?filter=[{"property":"*","op":"=","value":"fstabfile.txt"}]')
+    def get_fileRestoreOptions(self, filename):       
+        return self.get(params={'filter':'[{"property":"*","op":"=","value":"%s"}]' %filename})
