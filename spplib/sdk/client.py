@@ -48,6 +48,7 @@ resource_to_endpoint = {
     'site': 'site',
     'appserver': 'ngp/appserver',
     'apiappserver':'api/appserver',
+    'apiapp':'api/application',
     'corehv': 'api/hypervisor',
     'coresite': 'api/site',
     'spphv': 'ngp/hypervisor',
