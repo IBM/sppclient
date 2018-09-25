@@ -1,7 +1,6 @@
 import configparser
 import json
 import pprint
-import logging
 import os
 import re
 import tempfile
@@ -55,7 +54,8 @@ resource_to_endpoint = {
     'storage': 'ngp/storage',
     'corestorage': 'api/storage',
     'endeavour': 'api/endeavour',
-    'search' : 'api/endeavour/search'
+    'search' : 'api/endeavour/search',
+    'cloud': 'api/cloud'
 }
 
 resource_to_listfield = {
@@ -92,13 +92,13 @@ def build_url(baseurl, restype=None, resid=None, path=None, endpoint=None):
     return url.replace("/api/ngp", "/ngp")
 
 def raise_response_error(r, *args, **kwargs):
+
     if r.content:
         try:
-            #logging.info("\n%s",pretty_print(r.json()))
-            print("\n%s", r.json())
+            pretty_print(r.json())
         except:
-            #logging.info("\n%s",r)
-            print("\n%s",r)
+            pretty_print(r)
+
 
     r.raise_for_status()
 
@@ -170,11 +170,6 @@ class SppSession(object):
         # return json.loads(self.conn.get(url, params=params).content)
         resp = self.conn.get(url, params=params)
 
-        # logging.info("\n \n GET %s", url)
-        # logging.info("\n %s \n", resp.status_code)
-        # json_resp = resp.json()
-        # print_resp = pretty_print(json_resp)
-        # logging.info("\n %s \n", print_resp)
         return resp.json()
 
     def stream_get(self, restype=None, resid=None, path=None, params={}, endpoint=None, url=None, outfile=None):
@@ -182,8 +177,6 @@ class SppSession(object):
             url = build_url(self.api_url, restype, resid, path, endpoint)
 
         r = self.conn.get(url, params=params)
-        #logging.info("headers: %s" % r.headers)
-
         # The response header Content-Disposition contains default file name
         #   Content-Disposition: attachment; filename=log_1490030341274.zip
         default_filename = re.findall('filename=(.+)', r.headers['Content-Disposition'])[0]
@@ -206,9 +199,6 @@ class SppSession(object):
 
         resp = self.conn.delete(url, params=params)
 
-        # logging.info("\n DELETE %s ", url)
-        # logging.info("\n %s " , resp.status_code)
-
         # return json.loads(resp.content) if resp.content else None
         return resp.json() if resp.content else None
 
@@ -216,14 +206,9 @@ class SppSession(object):
         if url is None:
             url = build_url(self.api_url, restype, resid, path, endpoint)
 
-        #logging.info(json.dumps(data, indent=4))
         r = self.conn.post(url, json=data, params=params)
 
-        # logging.info("\n POST %s", url)
-        # logging.info("\n %s \n", pretty_print(data))
-        # logging.info("\n %s \n", r.status_code)
         json_resp = r.json()
-        # logging.info("\n %s \n", pretty_print(json_resp))
 
         if r.content:
             return r.json()
@@ -234,14 +219,8 @@ class SppSession(object):
         if url is None:
             url = build_url(self.api_url, restype, resid, path, endpoint)
 
-        #logging.info(json.dumps(data, indent=4))
         r = self.conn.put(url, json=data, params=params)
-
-        # logging.info("\n PUT %s", url)
-        # logging.info("\n %s \n", pretty_print(data))
-        # logging.info("\n %s \n", r.status_code)
         json_resp = r.json()
-        # logging.info("\n %s \n", pretty_print(json_resp))
 
         if r.content:
             return r.json()
@@ -324,12 +303,10 @@ class JobAPI(SppAPI):
         # in response. Rather, we need to query to get it.
         for i in range(5):
             live_sessions = self.spp_session.get(url=jobrun['links']['livejobsessions']['href'])
-            #pretty_print(live_sessions)
 
             try:
                 jobrun["curr_jobsession_id"] = live_sessions["sessions"][0]["id"]
             except Exception:
-                #logging.info("Attempt {}: Error in getting live job sessions".format(i))
                 time.sleep(2)
 
         # In case, we failed in finding job session ID, we don't throw exception
@@ -338,25 +315,22 @@ class JobAPI(SppAPI):
         return jobrun
 
     def get_log_entries(self, jobsession_id, page_size=1000, page_start_index=0):
-        #logging.info("*** get_log_entries: jobsession_id = %s, page_start_index: %s ***" % (jobsession_id, page_start_index))
 
         resp = self.spp_session.get(restype='log', path='job',
                                     params={'pageSize': page_size, 'pageStartIndex': page_start_index,
                                             'sort': '[{"property":"logTime","direction":"ASC"}]',
                                             'filter': '[{"property":"jobsessionId","value":"%s"}]'%jobsession_id})
 
-        #logging.info("*** get_log_entries:     Received %d entries..." % len(resp['logs']))
-
         return resp['logs']
     
     def monitor(self,jobStatus,job_id,job_name):
         jobIsActive = False
         while (True):
-            if (jobIsActive and ((jobStatus=="PENDING") or (jobStatus=="RESOURCE ACTIVE"))):
+            if (jobIsActive and ((jobStatus=="PENDING") or (jobStatus == "WAITING") or (jobStatus=="RESOURCE ACTIVE"))):
                 break
             if (jobStatus == "IDLE"):
                 break
-            if (not jobIsActive and (jobStatus != "PENDING")):
+            if (not jobIsActive and ((jobStatus != "PENDING") or (jobStatus == "WAITING"))):
                 jobIsActive = True
             print(" Sleeping for 30 seconds...")
             time.sleep(30)
