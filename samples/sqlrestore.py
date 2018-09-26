@@ -1,4 +1,4 @@
-# Script to restore one or more SQL dbs by name in SPP
+# Script to restore a SQL db by name in SPP
 # Use sqlrestore.py -h for help
 
 import json
