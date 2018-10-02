@@ -81,8 +81,8 @@ def build_db_source(dbinfo):
     return source
 
 def build_db_version(db):
-    start = int(datetime.datetime.strptime(options.start, '%m/%d/%Y %H:%M').strftime("%s"))*1000
-    end = int(datetime.datetime.strptime(options.end, '%m/%d/%Y %H:%M').strftime("%s"))*1000
+    start = int(datetime.datetime.strptime(options.start, '%m/%d/%Y %H:%M').timestamp())*1000
+    end = int(datetime.datetime.strptime(options.end, '%m/%d/%Y %H:%M').timestamp())*1000
     dbcpurl = db['links']['copies']['href']
     dbcopies = client.SppAPI(session, 'apiapp').get(url=dbcpurl)['copies']
     for copy in dbcopies:
@@ -168,7 +168,6 @@ def restore_dbs():
     restore['spec']['source'] = sourceinfo
     restore['spec']['subpolicy'] = subpolicy
     restore['spec']['view'] = "applicationview"
-    prettyprint(restore)
     resp = client.SppAPI(session, 'ngpapp').post(path='?action=restore', data=restore)
     logger.info("dbs are now being restored") 
 
