@@ -22,6 +22,9 @@ parser.add_option("--mode", dest="mode", help="restore mode, ie 'test', 'product
 parser.add_option("--start", dest="start", help="Start Date for copy to restore from (optional)")
 parser.add_option("--end", dest="end", help="End Date for copy to restore from (optional)")
 parser.add_option("--tinst", dest="tinst", help="Target instance to restore to (optional)")
+parser.add_option("--site", dest="site", help="Site to restore from (optional)")
+parser.add_option("--recovery", dest="recovery", help="Set to false for no recovery (optional, defaults to recovery)")
+parser.add_option("--pit", dest="pit", help="PIT recovery date/time (optional, requires latest copy)")
 (options, args) = parser.parse_args()
 
 def prettyprint(indata):
@@ -69,7 +72,9 @@ def build_db_source(dbinfo):
     dbdata['resourceType'] = "database"
     dbdata['id'] = dbinfo['id']
     dbdata['include'] = True
-    if(options.start is not None and options.end is not None):
+    if(options.start is not None and options.end is not None and options.pit is None):
+        dbdata['version'] = build_db_version(dbinfo)
+    elif(options.site is not None and options.pit is None):
         dbdata['version'] = build_db_version(dbinfo)
     else:
         dbdata['version'] = {}
@@ -77,26 +82,73 @@ def build_db_source(dbinfo):
         dbdata['version']['metadata'] = {'useLatest':True}
         dbdata['metadata']['useLatest'] = True
     logger.info("Adding db " + dbdata['metadata']['name'] + " to restore job")
+    if(options.pit is not None):
+        dbdata['pointInTime'] = int(datetime.datetime.strptime(options.pit, '%m/%d/%Y %H:%M:%S').timestamp())*1000
     source.append(copy.deepcopy(dbdata))
     return source
 
 def build_db_version(db):
-    start = int(datetime.datetime.strptime(options.start, '%m/%d/%Y %H:%M').timestamp())*1000
-    end = int(datetime.datetime.strptime(options.end, '%m/%d/%Y %H:%M').timestamp())*1000
-    dbcpurl = db['links']['copies']['href']
-    dbcopies = client.SppAPI(session, 'apiapp').get(url=dbcpurl)['copies']
-    for copy in dbcopies:
-        prottime = int(copy['protectionInfo']['protectionTime'])
-        if (start < prottime and prottime < end):
-            version = {}
-            version['href'] = copy['links']['version']['href']
-            version['copy'] = {}
-            version['copy']['href'] = copy['links']['self']['href']
-            version['metadata'] = {}
-            version['metadata']['useLatest'] = False
-            version['metadata']['protectionTime'] = prottime
-            return version
-    logger.warning("No specified versions found in date range for " + db['name'])
+    #find for datetime window only
+    if(options.start is not None and options.site is None):
+        start = int(datetime.datetime.strptime(options.start, '%m/%d/%Y %H:%M').timestamp())*1000
+        end = int(datetime.datetime.strptime(options.end, '%m/%d/%Y %H:%M').timestamp())*1000
+        dbcpurl = db['links']['copies']['href']
+        dbcopies = client.SppAPI(session, 'apiapp').get(url=dbcpurl)['copies']
+        for copy in dbcopies:
+            prottime = int(copy['protectionInfo']['protectionTime'])
+            if (start < prottime and prottime < end):
+                version = {}
+                version['href'] = copy['links']['version']['href']
+                version['copy'] = {}
+                version['copy']['href'] = copy['links']['self']['href']
+                version['metadata'] = {}
+                version['metadata']['useLatest'] = False
+                version['metadata']['protectionTime'] = prottime
+                return version
+    #find for site only
+    elif(options.start is None and options.site is not None):
+        dbcpurl = db['links']['copies']['href']
+        dbcopies = client.SppAPI(session, 'apiapp').get(url=dbcpurl)['copies']
+        site = find_site_by_name(options.site)
+        for copy in dbcopies:
+            prottime = int(copy['protectionInfo']['protectionTime'])
+            if (copy['siteId'] == site['id']):
+                version = {}
+                version['href'] = copy['links']['version']['href']
+                version['copy'] = {}
+                version['copy']['href'] = copy['links']['self']['href']
+                version['metadata'] = {}
+                version['metadata']['useLatest'] = False
+                version['metadata']['protectionTime'] = prottime
+                return version
+    #find copy for both
+    elif(options.start is not None and options.site is not None):
+        start = int(datetime.datetime.strptime(options.start, '%m/%d/%Y %H:%M').timestamp())*1000
+        end = int(datetime.datetime.strptime(options.end, '%m/%d/%Y %H:%M').timestamp())*1000
+        dbcpurl = db['links']['copies']['href']
+        dbcopies = client.SppAPI(session, 'apiapp').get(url=dbcpurl)['copies']
+        site = find_site_by_name(options.site)
+        for copy in dbcopies:
+            prottime = int(copy['protectionInfo']['protectionTime'])
+            if (start < prottime and prottime < end and copy['siteId'] == site['id']):
+                version = {}
+                version['href'] = copy['links']['version']['href']
+                version['copy'] = {}
+                version['copy']['href'] = copy['links']['self']['href']
+                version['metadata'] = {}
+                version['metadata']['useLatest'] = False
+                version['metadata']['protectionTime'] = prottime
+                return version
+    logger.warning("No specified versions found in date range and/or specified site for " + db['name'])
+    session.logout()
+    sys.exit(3)
+
+def find_site_by_name(sitename):
+    sites = client.SppAPI(session, 'coresite').get()['sites']
+    for site in sites:
+        if(site['name'].upper() == options.site.upper()):
+            return site
+    logger.warning("Site " + site['name'] + " not found")
     session.logout()
     sys.exit(3)
 
@@ -149,13 +201,24 @@ def build_subpolicy(dbinfo):
         subpol['mode'] = "production"
     subpol['option'] = {}
     subpol['option']['allowsessoverwrite'] = True
-    subpol['option']['applicationOption'] = {"overwriteExistingDb": False, "recoveryType": "recovery"}
+    subpol['option']['applicationOption'] = {"overwriteExistingDb": False}
+    subpol['option']['applicationOption']['recoveryType'] = set_recovery_type()
     subpol['option']['autocleanup'] = True
     subpol['option']['continueonerror'] = True
     subpol['destination'] = build_restore_dest(dbinfo)
     subpol['source'] = build_subpol_source(dbinfo)
     subpolicy.append(subpol)
     return subpolicy
+
+def set_recovery_type():
+    if(options.pit is not None):
+        return "pitrecovery"
+    elif(options.recovery is None):
+        return "recovery"
+    elif(options.recovery.upper() == "FALSE"):
+        return "norecovery"
+    else:
+        return "recovery"
 
 def restore_dbs():
     restore = {}
