@@ -34,7 +34,6 @@ def validate_input():
 
 def get_vm_info():
     vmarray = []
-    emptyarray = []
     for vm in options.vms:
         vmdata = {}
         searchdata = {"name":vm,"hypervisorType":"vmware"}
@@ -54,6 +53,7 @@ def get_vm_info():
 
 def get_sla_info():
     sladata = {}
+    slaarray = []
     if(options.sla != ""):
         slapols = client.SppAPI(session, 'sppsla').get()['slapolicies']
         for sla in slapols:
