@@ -93,13 +93,13 @@ def build_url(baseurl, restype=None, resid=None, path=None, endpoint=None):
     return url.replace("/api/ngp", "/ngp")
 
 def raise_response_error(r, *args, **kwargs):
-
+    '''
     if r.content:
         try:
             pretty_print(r.json())
         except:
             pretty_print(r)
-
+    '''
 
     r.raise_for_status()
 
@@ -178,7 +178,7 @@ class SppSession(object):
 
         response_json = resp.json()
         logging.info('\n')
-        logging.info('Status:{}'.format(response.status_code))
+        logging.info('Status:{}'.format(resp.status_code))
         logging.info('\n')
         logging.info(json.dumps(response_json, sort_keys=True, indent=4, separators=(',', ': ')))
 
@@ -218,7 +218,7 @@ class SppSession(object):
 
         response_json = resp.json()
         logging.info('\n')
-        logging.info('Status:{}'.format(response.status_code))
+        logging.info('Status:{}'.format(resp.status_code))
         logging.info('\n')
         logging.info(json.dumps(response_json, sort_keys=True, indent=4, separators=(',', ': ')))
 
@@ -238,7 +238,7 @@ class SppSession(object):
 
         response_json = r.json()
         logging.info('\n')
-        logging.info('Status:{}'.format(response.status_code))
+        logging.info('Status:{}'.format(r.status_code))
         logging.info('\n')
         logging.info(json.dumps(response_json, sort_keys=True, indent=4, separators=(',', ': ')))
 
@@ -262,7 +262,7 @@ class SppSession(object):
 
         response_json = r.json()
         logging.info('\n')
-        logging.info('Status:{}'.format(response.status_code))
+        logging.info('Status:{}'.format(r.status_code))
         logging.info('\n')
         logging.info(json.dumps(response_json, sort_keys=True, indent=4, separators=(',', ': ')))
         json_resp = r.json()
