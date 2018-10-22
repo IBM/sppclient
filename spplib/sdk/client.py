@@ -169,18 +169,17 @@ class SppSession(object):
             url = build_url(self.api_url, restype, resid, path, endpoint)
 
         logging.info('\n\n')
-        logging.info('GET')
-        logging.info('\n')
-        logging.info(url)
+        logging.info('GET  {}'.format(url))
 
         # return json.loads(self.conn.get(url, params=params).content)
         resp = self.conn.get(url, params=params)
 
-        response_json = resp.json()
+        logging.info("{} {}".format(resp.status_code, requests.status_codes._codes[resp.status_code][0]))
         logging.info('\n')
-        logging.info('Status:{}'.format(resp.status_code))
-        logging.info('\n')
-        logging.info(json.dumps(response_json, sort_keys=True, indent=4, separators=(',', ': ')))
+        if resp.content:
+            response_json = resp.json()
+            logging.info('\n')
+            logging.info(json.dumps(response_json, sort_keys=True, indent=4, separators=(',', ': ')))
 
         return resp.json()
 
@@ -210,17 +209,16 @@ class SppSession(object):
             url = build_url(self.api_url, restype, resid, path, endpoint)
 
         logging.info('\n\n')
-        logging.info('DELETE')
-        logging.info('\n')
-        logging.info(url)
+        logging.info('DELETE {}'.format(url))
 
         resp = self.conn.delete(url, params=params)
 
-        response_json = resp.json()
+        logging.info("{} {}".format(resp.status_code, requests.status_codes._codes[resp.status_code][0]))
         logging.info('\n')
-        logging.info('Status:{}'.format(resp.status_code))
-        logging.info('\n')
-        logging.info(json.dumps(response_json, sort_keys=True, indent=4, separators=(',', ': ')))
+        if resp.content:
+            response_json = resp.json()
+            logging.info('\n')
+            logging.info(json.dumps(response_json, sort_keys=True, indent=4, separators=(',', ': ')))
 
         # return json.loads(resp.content) if resp.content else None
         return resp.json() if resp.content else None
@@ -230,19 +228,16 @@ class SppSession(object):
             url = build_url(self.api_url, restype, resid, path, endpoint)
 
         logging.info('\n\n')
-        logging.info('POST')
-        logging.info('\n')
-        logging.info(url)
+        logging.info('POST  {}'.format(url))
 
         r = self.conn.post(url, json=data, params=params)
 
-        response_json = r.json()
+        logging.info("{} {}".format(r.status_code, requests.status_codes._codes[r.status_code][0]))
         logging.info('\n')
-        logging.info('Status:{}'.format(r.status_code))
-        logging.info('\n')
-        logging.info(json.dumps(response_json, sort_keys=True, indent=4, separators=(',', ': ')))
-
-        json_resp = r.json()
+        if r.content:
+            response_json = r.json()
+            logging.info('\n')
+            logging.info(json.dumps(response_json, sort_keys=True, indent=4, separators=(',', ': ')))
 
         if r.content:
             return r.json()
@@ -254,21 +249,20 @@ class SppSession(object):
             url = build_url(self.api_url, restype, resid, path, endpoint)
 
         logging.info('\n\n')
-        logging.info('PUT')
-        logging.info('\n')
-        logging.info(url)
+        logging.info('PUT  {}'.format(url))
 
         r = self.conn.put(url, json=data, params=params)
 
-        response_json = r.json()
+        logging.info("{} {}".format(r.status_code, requests.status_codes._codes[r.status_code][0]))
         logging.info('\n')
-        logging.info('Status:{}'.format(r.status_code))
-        logging.info('\n')
-        logging.info(json.dumps(response_json, sort_keys=True, indent=4, separators=(',', ': ')))
-        json_resp = r.json()
+        if r.content:
+            response_json = r.json()
+            logging.info('\n')
+            logging.info(json.dumps(response_json, sort_keys=True, indent=4, separators=(',', ': ')))
 
         if r.content:
             return r.json()
+
 
         return {}  
 
