@@ -168,8 +168,19 @@ class SppSession(object):
         if url is None:
             url = build_url(self.api_url, restype, resid, path, endpoint)
 
+        logging.info('\n\n')
+        logging.info('GET')
+        logging.info('\n')
+        logging.info(url)
+
         # return json.loads(self.conn.get(url, params=params).content)
         resp = self.conn.get(url, params=params)
+
+        response_json = resp.json()
+        logging.info('\n')
+        logging.info('Status:{}'.format(response.status_code))
+        logging.info('\n')
+        logging.info(json.dumps(response_json, sort_keys=True, indent=4, separators=(',', ': ')))
 
         return resp.json()
 
@@ -198,7 +209,18 @@ class SppSession(object):
         if url is None:
             url = build_url(self.api_url, restype, resid, path, endpoint)
 
+        logging.info('\n\n')
+        logging.info('DELETE')
+        logging.info('\n')
+        logging.info(url)
+
         resp = self.conn.delete(url, params=params)
+
+        response_json = resp.json()
+        logging.info('\n')
+        logging.info('Status:{}'.format(response.status_code))
+        logging.info('\n')
+        logging.info(json.dumps(response_json, sort_keys=True, indent=4, separators=(',', ': ')))
 
         # return json.loads(resp.content) if resp.content else None
         return resp.json() if resp.content else None
@@ -207,7 +229,18 @@ class SppSession(object):
         if url is None:
             url = build_url(self.api_url, restype, resid, path, endpoint)
 
+        logging.info('\n\n')
+        logging.info('POST')
+        logging.info('\n')
+        logging.info(url)
+
         r = self.conn.post(url, json=data, params=params)
+
+        response_json = r.json()
+        logging.info('\n')
+        logging.info('Status:{}'.format(response.status_code))
+        logging.info('\n')
+        logging.info(json.dumps(response_json, sort_keys=True, indent=4, separators=(',', ': ')))
 
         json_resp = r.json()
 
@@ -220,7 +253,18 @@ class SppSession(object):
         if url is None:
             url = build_url(self.api_url, restype, resid, path, endpoint)
 
+        logging.info('\n\n')
+        logging.info('PUT')
+        logging.info('\n')
+        logging.info(url)
+
         r = self.conn.put(url, json=data, params=params)
+
+        response_json = r.json()
+        logging.info('\n')
+        logging.info('Status:{}'.format(response.status_code))
+        logging.info('\n')
+        logging.info(json.dumps(response_json, sort_keys=True, indent=4, separators=(',', ': ')))
         json_resp = r.json()
 
         if r.content:
