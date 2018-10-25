@@ -128,7 +128,7 @@ def change_ospassword(url,oldpassword,newpassword):
     conn.headers.update({'Content-Type': 'application/json'})
     conn.headers.update({'Accept': 'application/json'})
     return conn.post("%s/api/endeavour/session?changeOsPassword=true&screenInfo=1" % url, json=data)
-    
+
 class SppSession(object):
     def __init__(self, url, username=None, password=None, sessionid=None):
         self.url = url
@@ -141,14 +141,14 @@ class SppSession(object):
         self.conn = requests.Session()
         self.conn.verify = False
         self.conn.hooks.update({'response': raise_response_error})
-        
-        
+
+
         if not self.sessionid:
             if self.username and self.password:
                 self.login()
             else:
                 raise Exception('Please provide login credentials.')
-        
+
         self.conn.headers.update({'X-Endeavour-Sessionid': self.sessionid})
         self.conn.headers.update({'Content-Type': 'application/json'})
         self.conn.headers.update({'Accept': 'application/json'})
@@ -159,8 +159,8 @@ class SppSession(object):
 
     def logout(self):
         r = self.conn.delete("%s/endeavour/session" % self.sess_url)
-    
-        
+
+
     def __repr__(self):
         return 'sppSession: user: %s' % self.username
 
@@ -243,7 +243,7 @@ class SppSession(object):
             return r.json()
 
         return {}
-    
+
     def put(self, restype=None, resid=None, path=None, data={}, params={}, endpoint=None, url=None):
         if url is None:
             url = build_url(self.api_url, restype, resid, path, endpoint)
@@ -264,7 +264,7 @@ class SppSession(object):
             return r.json()
 
 
-        return {}  
+        return {}
 
 class SppAPI(object):
     def __init__(self, spp_session, restype=None, endpoint=None):
@@ -289,11 +289,11 @@ class SppAPI(object):
     def post(self, resid=None, path=None, data={}, params={}, url=None):
         return self.spp_session.post(restype=self.restype, resid=resid, path=path, data=data,
                                      params=params, url=url)
-                                     
+
     def put(self, resid=None, path=None, data={}, params={}, url=None):
         return self.spp_session.put(restype=self.restype, resid=resid, path=path, data=data,
                                      params=params, url=url)
-    
+
 class JobAPI(SppAPI):
     def __init__(self, spp_session):
         super(JobAPI, self).__init__(spp_session, 'job')
@@ -302,7 +302,7 @@ class JobAPI(SppAPI):
     # Can use lastSessionStatus property in the job object for now
     def status(self, jobid):
         return self.spp_session.get(restype=self.restype, resid=jobid, path='status')
-    
+
     def getjob(self,name):
         jobs = self.get()['jobs']
         for job in jobs:
@@ -361,9 +361,11 @@ class JobAPI(SppAPI):
                                             'filter': '[{"property":"jobsessionId","value":"%s"}]'%jobsession_id})
 
         return resp['logs']
-    
-    def monitor(self,jobStatus,job_id,job_name):
+
+    def monitor(self,jobStatus,job_id,job_name, timeout= 0):
         jobIsActive = False
+        current_time = time.time()
+
         while (True):
             if (jobIsActive and ((jobStatus=="PENDING") or (jobStatus == "WAITING") or (jobStatus=="RESOURCE ACTIVE"))):
                 break
@@ -371,12 +373,20 @@ class JobAPI(SppAPI):
                 break
             if (not jobIsActive and ((jobStatus != "PENDING") or (jobStatus == "WAITING"))):
                 jobIsActive = True
+
             print(" Sleeping for 30 seconds...")
             time.sleep(30)
-            jobStatus = self.status(job_id)['currentStatus'] 
+            jobStatus = self.status(job_id)['currentStatus']
             print(jobStatus)
-        
-        
+            job_time_taken = time.time()
+            time_elasped = int(job_time_taken - current_time)
+            if(timeout != 0) and (time_elasped > timeout) and jobIsActive:
+                try:
+                    canceldatapayload = {"catalogCompletedObjects":False}
+                    self.spp_session.post(path='api/endeavour/job/'+job_id+'?action=cancel&actionname=cancel', data=canceldatapayload)
+                except:
+                    raise Exception('Job exceeded maximum time limit and hence job is cancelling')
+
         sessionId = self.getjob(job_name)['lastrun']['sessionId']
         print(sessionId)
         sessionStatus = self.spp_session.get(path='api/endeavour/jobsession/'+sessionId)['status']
