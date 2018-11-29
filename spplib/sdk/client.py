@@ -179,7 +179,8 @@ class SppSession(object):
         if resp.content:
             response_json = resp.json()
             logging.info('\n')
-            logging.info(json.dumps(response_json, sort_keys=True, indent=4, separators=(',', ': ')))
+            #Commenting this line to reduce the xml file size
+            #logging.info(json.dumps(response_json, sort_keys=True, indent=4, separators=(',', ': ')))
 
         return resp.json()
 
@@ -384,6 +385,9 @@ class JobAPI(SppAPI):
                 try:
                     canceldatapayload = {"catalogCompletedObjects":False}
                     self.spp_session.post(path='api/endeavour/job/'+job_id+'?action=cancel&actionname=cancel', data=canceldatapayload)
+                    sessionId = self.getjob(job_name)['lastrun']['sessionId']
+                    sessionStatus = self.spp_session.get(path='api/endeavour/jobsession/' + sessionId)['status']
+                    return jobStatus, sessionStatus
                 except:
                     raise Exception('Job exceeded maximum time limit and hence job is cancelling')
 
