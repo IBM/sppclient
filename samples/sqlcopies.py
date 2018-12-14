@@ -16,6 +16,7 @@ parser.add_option("--user", dest="username", help="SPP Username")
 parser.add_option("--pass", dest="password", help="SPP Password")
 parser.add_option("--host", dest="host", help="SPP Host, (ex. https://172.20.49.49)")
 parser.add_option("--inst", dest="inst", help="Instance name in case db name exists in multiple (optional)")
+parser.add_option("--ag", dest="ag", help="Availability group name in case db name exists in multiple (optional)")
 parser.add_option("--db", dest="db", help="db name")
 (options, args) = parser.parse_args()
 
@@ -40,6 +41,10 @@ def find_db():
             if(options.inst is not None):
                 inst = client.SppAPI(session, 'apiapp').get(url=founddb['links']['instance']['href'])
                 if(options.inst.upper() in inst['name']):
+                    return founddb
+            elif(options.ag is not None):
+                dbg = client.SppAPI(session, 'apiapp').get(url=founddb['links']['databaseGroup']['href'])
+                if(options.ag.upper() in dbg['name']):
                     return founddb
             else:
                 return founddb
