@@ -219,7 +219,8 @@ class SppSession(object):
         if resp.content:
             response_json = resp.json()
             logging.info('\n')
-            logging.info(json.dumps(response_json, sort_keys=True, indent=4, separators=(',', ': ')))
+            # Commenting this line to reduce the xml file size
+            #logging.info(json.dumps(response_json, sort_keys=True, indent=4, separators=(',', ': ')))
 
         # return json.loads(resp.content) if resp.content else None
         return resp.json() if resp.content else None
@@ -238,7 +239,8 @@ class SppSession(object):
         if r.content:
             response_json = r.json()
             logging.info('\n')
-            logging.info(json.dumps(response_json, sort_keys=True, indent=4, separators=(',', ': ')))
+            # Commenting this line to reduce the xml file size
+            #logging.info(json.dumps(response_json, sort_keys=True, indent=4, separators=(',', ': ')))
 
         if r.content:
             return r.json()
@@ -259,7 +261,8 @@ class SppSession(object):
         if r.content:
             response_json = r.json()
             logging.info('\n')
-            logging.info(json.dumps(response_json, sort_keys=True, indent=4, separators=(',', ': ')))
+            # Commenting this line to reduce the xml file size
+            #logging.info(json.dumps(response_json, sort_keys=True, indent=4, separators=(',', ': ')))
 
         if r.content:
             return r.json()
@@ -375,10 +378,10 @@ class JobAPI(SppAPI):
             if (not jobIsActive and ((jobStatus != "PENDING") or (jobStatus == "WAITING"))):
                 jobIsActive = True
 
-            print(" Sleeping for 30 seconds...")
+            #print(" Sleeping for 30 seconds...")
             time.sleep(30)
             jobStatus = self.status(job_id)['currentStatus']
-            print(jobStatus)
+            #print(jobStatus)
             job_time_taken = time.time()
             time_elasped = int(job_time_taken - current_time)
             if(timeout != 0) and (time_elasped > timeout) and jobIsActive:
@@ -392,7 +395,7 @@ class JobAPI(SppAPI):
                     raise Exception('Job exceeded maximum time limit and hence job is cancelling')
 
         sessionId = self.getjob(job_name)['lastrun']['sessionId']
-        print(sessionId)
+        #print(sessionId)
         sessionStatus = self.spp_session.get(path='api/endeavour/jobsession/'+sessionId)['status']
         return jobStatus,sessionStatus
 
@@ -926,7 +929,7 @@ class restoreAPI(SppAPI):
         jobsession = self.spp_session.get(path='api/endeavour/jobsession?pageSize=200')['sessions']
         for session in jobsession:
             if(session['jobId'] == job_id):
-                print(session['status'])
+                #print(session['status'])
                 currentstatus = session['status']
                 break
         return currentstatus
