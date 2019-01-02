@@ -27,7 +27,8 @@ parser.add_option("--tinst", dest="tinst", help="Target instance to restore to (
 parser.add_option("--site", dest="site", help="Site to restore from (optional)")
 parser.add_option("--recovery", dest="recovery", help="Set to false for no recovery (optional, defaults to recovery)")
 parser.add_option("--pit", dest="pit", help="PIT recovery date/time (optional, requires latest copy)")
-parser.add_option("--path", dest="path", help="Path to restore SQL file(s) (optional, for production mode only)")
+parser.add_option("--dpath", dest="dpath", help="Path to restore SQL data file(s) (optional, for production mode only)")
+parser.add_option("--lpath", dest="lpath", help="Path to restore SQL log file(s) (optional, for production mode only)")
 (options, args) = parser.parse_args()
 
 def prettyprint(indata):
@@ -173,11 +174,18 @@ def build_restore_dest(dbinfo):
         destination['target'] = build_target_instance()
     if(options.mode in ['test','production']):
         destination['mapdatabase'] = {dbinfo['links']['self']['href']:{'name':options.newname,'paths':[]}}
-    if(options.mode == 'production' and options.path is not None):
+    if(options.mode == 'production' and options.dpath is not None):
         for sourcepath in dbinfo['paths']:
             mapping = {}
             mapping['source'] = sourcepath['name']
-            mapping['destination'] = options.path
+            if(sourcepath['fileType'] == "DATA"):
+                mapping['destination'] = options.dpath
+            elif(sourcepath['fileType'] == "LOGS"):
+                if(options.lpath is None):
+                    logger.warning("Log files found, please define destination path")
+                    session.logout()
+                    sys.exit(7)
+                mapping['destination'] = options.lpath
             destination['mapdatabase'][dbinfo['links']['self']['href']]['paths'].append(mapping)
     return destination
 
