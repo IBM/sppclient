@@ -27,6 +27,7 @@ parser.add_option("--tinst", dest="tinst", help="Target instance to restore to (
 parser.add_option("--site", dest="site", help="Site to restore from (optional)")
 parser.add_option("--recovery", dest="recovery", help="Set to false for no recovery (optional, defaults to recovery)")
 parser.add_option("--pit", dest="pit", help="PIT recovery date/time (optional, requires latest copy)")
+parser.add_option("--path", dest="path", help="Path to restore SQL file(s) (optional, for production mode only)")
 (options, args) = parser.parse_args()
 
 def prettyprint(indata):
@@ -172,6 +173,12 @@ def build_restore_dest(dbinfo):
         destination['target'] = build_target_instance()
     if(options.mode in ['test','production']):
         destination['mapdatabase'] = {dbinfo['links']['self']['href']:{'name':options.newname,'paths':[]}}
+    if(options.mode == 'production' and options.path is not None):
+        for sourcepath in dbinfo['paths']:
+            mapping = {}
+            mapping['source'] = sourcepath['name']
+            mapping['destination'] = options.path
+            destination['mapdatabase'][dbinfo['links']['self']['href']]['paths'].append(mapping)
     return destination
 
 
@@ -241,6 +248,7 @@ def restore_dbs():
     restore['spec']['source'] = sourceinfo
     restore['spec']['subpolicy'] = subpolicy
     restore['spec']['view'] = "applicationview"
+    #prettyprint(restore)
     resp = client.SppAPI(session, 'ngpapp').post(path='?action=restore', data=restore)
     logger.info("dbs are now being restored")
 
