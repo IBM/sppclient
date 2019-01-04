@@ -29,6 +29,7 @@ parser.add_option("--recovery", dest="recovery", help="Set to false for no recov
 parser.add_option("--pit", dest="pit", help="PIT recovery date/time (optional, requires latest copy)")
 parser.add_option("--dpath", dest="dpath", help="Path to restore SQL data file(s) (optional, for production mode only)")
 parser.add_option("--lpath", dest="lpath", help="Path to restore SQL log file(s) (optional, for production mode only)")
+parser.add_option("--overwrite", dest="overwrite", help="Overwrite existing database (optional, defaults to false)")
 (options, args) = parser.parse_args()
 
 def prettyprint(indata):
@@ -226,7 +227,11 @@ def build_subpolicy(dbinfo):
         subpol['mode'] = "production"
     subpol['option'] = {}
     subpol['option']['allowsessoverwrite'] = True
-    subpol['option']['applicationOption'] = {"overwriteExistingDb": False}
+    if(options.overwrite is not None):
+        if(options.overwrite.upper() == "TRUE"):
+            subpol['option']['applicationOption'] = {"overwriteExistingDb": True}
+    else:
+        subpol['option']['applicationOption'] = {"overwriteExistingDb": False}
     subpol['option']['applicationOption']['recoveryType'] = set_recovery_type()
     subpol['option']['autocleanup'] = True
     subpol['option']['continueonerror'] = True
