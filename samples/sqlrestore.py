@@ -7,6 +7,7 @@ from optparse import OptionParser
 import copy
 import sys
 import datetime
+import time
 import spplib.sdk.client as client
 logging.basicConfig()
 logger = logging.getLogger('logger')
@@ -30,6 +31,7 @@ parser.add_option("--pit", dest="pit", help="PIT recovery date/time (optional, r
 parser.add_option("--dpath", dest="dpath", help="Path to restore SQL data file(s) (optional, for production mode only)")
 parser.add_option("--lpath", dest="lpath", help="Path to restore SQL log file(s) (optional, for production mode only)")
 parser.add_option("--overwrite", dest="overwrite", help="Overwrite existing database (optional, defaults to false)")
+parser.add_option("--wait", dest="wait", help="Wait for restore to finish and report status (optional, defaults to false)")
 (options, args) = parser.parse_args()
 
 def prettyprint(indata):
@@ -250,6 +252,29 @@ def set_recovery_type():
     else:
         return "recovery"
 
+def wait_for_completion(resp):
+    activejobses = client.SppAPI(session, 'ngpapp').get(url=resp['response']['links']['activejobsessions']['href'])
+    time.sleep(3)
+    if(len(activejobses['sessions']) < 1):
+        logger.warning("Something went wrong, please check restore logs on SPP appliance")
+        session.logout()
+        sys.exit(8)
+    jobses = activejobses['sessions'][0]
+    jobsesurl = jobses['links']['self']['href']
+    logsurl = jobses['links']['log']['href'] + "&pageSize=50000&sort=%5B%7B%22property%22:%22logTime%22,%22direction%22:%22ASC%22%7D%5D"
+    currlogtime = 0
+    while jobses['status'] == "RUNNING":
+        logs = client.SppAPI(session, 'ngpapp').get(url=logsurl)['logs']
+        for log in logs:
+            if(log['logTime'] >= currlogtime): # some logs have same timestamp down to ms
+                timestring = datetime.datetime.fromtimestamp(int(log['logTime']/1000)).strftime('%Y-%m-%d %H:%M:%S')
+                print(timestring + " " + log['type'] + " " + log['message'])
+                currlogtime = log['logTime']
+        jobses = client.SppAPI(session, 'ngpapp').get(url=jobsesurl)
+        currlogtime += 1 # prevent double prints if we are waiting on same timestamp
+        time.sleep(10)
+    print("Job ended with status: " + jobses['status'])
+
 def restore_dbs():
     restore = {}
     dbinfo = find_db()
@@ -263,7 +288,11 @@ def restore_dbs():
     restore['spec']['view'] = "applicationview"
     #prettyprint(restore)
     resp = client.SppAPI(session, 'ngpapp').post(path='?action=restore', data=restore)
-    logger.info("dbs are now being restored")
+    if(options.wait is not None):
+        if(options.wait.upper() == "TRUE"):
+            wait_for_completion(resp)
+    else:
+        print("Restore job created")
 
 validate_input()
 session = client.SppSession(options.host, options.username, options.password)
