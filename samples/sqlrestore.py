@@ -286,8 +286,8 @@ def restore_dbs():
     restore['spec']['source'] = sourceinfo
     restore['spec']['subpolicy'] = subpolicy
     restore['spec']['view'] = "applicationview"
-    #prettyprint(restore)
-    resp = client.SppAPI(session, 'ngpapp').post(path='?action=restore', data=restore)
+    prettyprint(restore)
+    #resp = client.SppAPI(session, 'ngpapp').post(path='?action=restore', data=restore)
     if(options.wait is not None):
         if(options.wait.upper() == "TRUE"):
             wait_for_completion(resp)
