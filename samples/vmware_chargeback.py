@@ -2,16 +2,17 @@
 # script for generating chargeback data for vmware in SPP
 # script combines data transferred values from recovery catalog with current managed capacity for the VM
 # this provides a pre compression/dedupe approximation for the VM backup storage occupancy
-# script provides output to screen or destination file in JSON format
+# script provides output in JSON to screen or destination file in csv
 # Example:
 #    python3 vmware_chargeback.py --host="https://172.20.49.50" --user="admin" --pass="password123"
-#    python3 vmware_chargeback.py --host="https://172.20.49.50" --user="admin" --pass="password123" --dest="output.json"
+#    python3 vmware_chargeback.py --host="https://172.20.49.50" --user="admin" --pass="password123" --dest="output.csv"
 #
 
 import json
 import time
 import sys
 import datetime
+import csv
 from optparse import OptionParser
 import spplib.sdk.client as client
 import copy
@@ -31,13 +32,6 @@ parser.add_option("--dest", dest="dest", help="Destination output file (optional
 
 def prettyprint(indata):
     print(json.dumps(indata, sort_keys=True,indent=4, separators=(',', ': ')))
-
-def prettywrite(indata, filepath):
-    data = json.dumps(indata, sort_keys=True,indent=4, separators=(',', ': '))
-    file = open(filepath,"w")
-    file.write(data)
-    file.close()
-    print("Chargeback data written to " + filepath)
 
 def get_successful_vm_info():
     try:
@@ -95,10 +89,18 @@ def get_actual_size(size,precision=2):
 
 def run():
     suc_vms = get_successful_vm_info()
-    #prettyprint(suc_vms)
     data = parse_successful_vm_info(suc_vms)
     if options.dest is not None:
-        prettywrite(data,options.dest)
+        file = open(options.dest,"w")
+        csvwriter = csv.writer(file)
+        count = 0
+        for line in data:
+            if count == 0:
+                csvwriter.writerow(line.keys())
+                count += 1
+            csvwriter.writerow(line.values())
+        file.close()
+        print("Chargeback data written to " + options.dest)
     else:
         prettyprint(data)
 
