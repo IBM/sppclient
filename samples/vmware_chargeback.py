@@ -1,8 +1,9 @@
 #
-# script for generating chargeback data for vmware in SPP
-# script combines data transferred values from recovery catalog with current managed capacity for the VM
-# this provides a pre compression/dedupe approximation for the VM backup storage occupancy
-# script provides output in JSON to screen or destination file in csv
+# This script can be used for generating chargeback data for vmware in SPP
+# Script combines data transferred values from the recovery catalog with latest managed capacity for the VM
+# This provides a pre compression/dedupe approximation for the VM backup storage occupancy for base and incremental backups
+# The script also outputs some other relevant information about the VM
+# The script provides output to screen or destination file in csv
 # Example:
 #    python3 vmware_chargeback.py --host="https://172.20.49.50" --user="admin" --pass="password123"
 #    python3 vmware_chargeback.py --host="https://172.20.49.50" --user="admin" --pass="password123" --dest="output.csv"
@@ -102,7 +103,11 @@ def run():
         file.close()
         print("Chargeback data written to " + options.dest)
     else:
-        prettyprint(data)
+        print('{:20s} | {:20s} | {:20s} | {:10s}'.format('VM', 'Hypervisor', 'SLA', 'Size'))
+        print('='.ljust(80,'='))
+        for line in data:
+            print('{:20.20s} | {:20.20s} | {:20.20s} | {:10.10s}'.format(
+                line['vm'], line['hypervisor'], line['sla'], line['backupSize']))
 
 session = client.SppSession(options.host, options.username, options.password)
 session.login()
