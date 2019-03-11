@@ -1,6 +1,0 @@
-vm,tags,hypervisor,sla,protectionMethod,backupStorage,backupSize,recoveryPoints
-LABDB2-1,PL-Tag-Test ,esxlab.spplab.com,BenOffload,vsnap,localhost,102.24GB,3
-nathan-win2016,,esxlab.spplab.com,Gold,vsnap,localhost,64.61GB,4
-nathan-target-vm1,,esxlab.spplab.com,Gold,vsnap,localhost,71.75GB,1
-LABPROXY4,,esxlab.spplab.com,Gold,vsnap,10.250.250.72,85.95GB,23
-LABPROXY9,PL-Tag-Test ,esxlab.spplab.com,VMware_plam,vsnap,localhost,67.03GB,1
