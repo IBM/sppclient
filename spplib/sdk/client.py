@@ -31,7 +31,7 @@ urllib3.disable_warnings()
 resource_to_endpoint = {
     'job': 'api/endeavour/job',
     'jobsession': 'api/endeavour/jobsession',
-    'log': 'endeavour/log',
+    'log': 'api/endeavour/log',
     'association': 'endeavour/association',
     'workflow': 'spec/storageprofile',
     'policy': 'endeavour/policy',
@@ -184,6 +184,30 @@ class SppSession(object):
 
         return resp.json()
 
+    def diag_get(self, restype=None, resid=None, path=None, params={}, endpoint=None, url=None, outfile=None):
+        if url is None:
+            url = build_url(self.api_url, restype, resid, path, endpoint)
+
+        logging.info('\n\n')
+        logging.info('GET  {}'.format(url))
+
+        # return json.loads(self.conn.get(url, params=params).content)
+        resp = self.conn.get(url, params=params)
+        default_filename = re.findall('filename=(.+)', resp.headers['Content-Disposition'])[0]
+
+        if not outfile:
+            if not default_filename:
+                raise Exception("Couldn't get the file name to save the contents.")
+
+            outfile = os.path.join(tempfile.mkdtemp(), default_filename)
+
+        with open(outfile, 'wb') as fd:
+                fd.write(resp.content)
+
+        return outfile
+
+
+
     def stream_get(self, restype=None, resid=None, path=None, params={}, endpoint=None, url=None, outfile=None):
         if url is None:
             url = build_url(self.api_url, restype, resid, path, endpoint)
@@ -280,6 +304,9 @@ class SppAPI(object):
     def get(self, resid=None, path=None, params={}, url=None):
         return self.spp_session.get(restype=self.restype, resid=resid, path=path, params=params, url=url)
 
+    def get_log(self, resid=None, path=None, params={}, url=None, outfile=None):
+        return self.spp_session.diag_get(restype=self.restype, resid=resid, path=path, params=params, url=url, outfile=outfile)
+
     def stream_get(self, resid=None, path=None, params={}, url=None, outfile=None):
         return self.spp_session.stream_get(restype=self.restype, resid=resid, path=path,
                                            params=params, url=url, outfile=outfile)
@@ -296,7 +323,28 @@ class SppAPI(object):
 
     def put(self, resid=None, path=None, data={}, params={}, url=None):
         return self.spp_session.put(restype=self.restype, resid=resid, path=path, data=data,
+
                                      params=params, url=url)
+
+class JobSessionAPI(SppAPI):
+    def __init__(self, spp_session):
+        super(JobSessionAPI, self).__init__(spp_session, 'jobsession')
+
+    def get_jobsession(self, jobsessionid):
+
+        jobsession = self.spp_session.get(path='api/endeavour/jobsession/{}'.format(jobsessionid))
+
+        return jobsession
+
+class DiagAPI(SppAPI):
+    def __init__(self, spp_session):
+        super(DiagAPI, self).__init__(spp_session, 'jobsession')
+
+    def get_joblogs(self, url, outfile):
+        resp_diag = SppAPI.get_log(self, url=url, outfile=outfile)
+        return resp_diag
+
+
 
 class JobAPI(SppAPI):
     def __init__(self, spp_session):
@@ -395,9 +443,12 @@ class JobAPI(SppAPI):
                     raise Exception('Job exceeded maximum time limit and hence job is cancelling')
 
         sessionId = self.getjob(job_name)['lastrun']['sessionId']
+
         #print(sessionId)
         sessionStatus = self.spp_session.get(path='api/endeavour/jobsession/'+sessionId)['status']
-        return jobStatus,sessionStatus
+        return jobStatus, sessionStatus, sessionId
+
+
 
 class UserIdentityAPI(SppAPI):
     def __init__(self, spp_session):
@@ -461,6 +512,20 @@ class LogAPI(SppAPI):
 
     def download_logs(self, outfile=None):
         return self.stream_get(path="download/diagnostics", outfile=outfile)
+
+    def download_joblogs(self, jobname):
+
+        spp_sess = SppSession()
+        all_sessions = SppAPI().get(path='api/endeavour/jobsession')['sessions']
+        for sess in all_sessions:
+            if sess['jobName'] == job_name:
+                sess_id = sess['id']
+                diag_href = sess['links']['diagnostics']['href']
+
+                resp_diag = (spp_sess.diag_get(url=diag_href)).content
+
+
+        return resp_diag
 
 class OracleAPI(SppAPI):
     def __init__(self, spp_session):
