@@ -446,7 +446,7 @@ class JobAPI(SppAPI):
 
         #print(sessionId)
         sessionStatus = self.spp_session.get(path='api/endeavour/jobsession/'+sessionId)['status']
-        return jobStatus, sessionStatus, sessionId
+        return jobStatus, sessionStatus
 
 
 
