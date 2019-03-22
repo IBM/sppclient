@@ -444,8 +444,30 @@ class JobAPI(SppAPI):
 
         sessionId = self.getjob(job_name)['lastrun']['sessionId']
 
-        #print(sessionId)
-        sessionStatus = self.spp_session.get(path='api/endeavour/jobsession/'+sessionId)['status']
+        sessionStatus = self.spp_session.get(path='api/endeavour/jobsession/' + sessionId)['status']
+
+        #downloading job log if status is PARTIAL or FAILED
+        try:
+            if sessionStatus == 'PARTIAL' or sessionStatus == 'FAILED':
+
+                diagapi = DiagAPI(spp_session=self.spp_session)
+                jobsessapi = JobSessionAPI(spp_session=self.spp_session)
+                diag_href = None
+
+                jobsession = jobsessapi.get_jobsession(sessionId)
+                diag_href = jobsession['links']['diagnostics']['href']
+
+                outfile = diagapi.get_joblogs(url=diag_href, outfile="joblog_{}.zip".format(sessionId))
+                print("Job log has been downloaded file name is : {} ".format(outfile))
+        except:
+            pass
+
+
+
+
+
+
+
         return jobStatus, sessionStatus
 
 
