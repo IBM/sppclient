@@ -6,6 +6,8 @@ import re
 import tempfile
 import time
 import logging
+import traceback
+from spplib.sdk import system
 
 import requests
 from requests.auth import HTTPBasicAuth
@@ -448,25 +450,20 @@ class JobAPI(SppAPI):
 
         #downloading job log if status is PARTIAL or FAILED
         try:
-            if sessionStatus == 'PARTIAL' or sessionStatus == 'FAILED':
 
+            if sessionStatus in ['PARTIAL', 'FAILED']:
                 diagapi = DiagAPI(spp_session=self.spp_session)
                 jobsessapi = JobSessionAPI(spp_session=self.spp_session)
-                diag_href = None
-
                 jobsession = jobsessapi.get_jobsession(sessionId)
                 diag_href = jobsession['links']['diagnostics']['href']
 
                 outfile = diagapi.get_joblogs(url=diag_href, outfile="joblog_{}.zip".format(sessionId))
-                print("Job log has been downloaded file name is : {} ".format(outfile))
+                logging.info("Job log has been downloaded file name is : {} ".format(outfile))
+                logging.info("Uploading log file to Prolog server")
+                upload_url, rc = system.run_shell_command("vsdiag upload {}".format(outfile))
+                logging.info("Download and Upload compelete, the url is :{}".format(rc))
         except:
-            pass
-
-
-
-
-
-
+            traceback.print_exc()
 
         return jobStatus, sessionStatus
 
