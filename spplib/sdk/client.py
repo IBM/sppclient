@@ -154,6 +154,7 @@ class SppSession(object):
         self.conn.headers.update({'X-Endeavour-Sessionid': self.sessionid})
         self.conn.headers.update({'Content-Type': 'application/json'})
         self.conn.headers.update({'Accept': 'application/json'})
+        self.conn.headers.update({'X-Endeavour-Locale': 'en-us'})
 
     def login(self):
         r = self.conn.post("%s/endeavour/session" % self.sess_url, auth=HTTPBasicAuth(self.username, self.password))
