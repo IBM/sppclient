@@ -108,8 +108,9 @@ def raise_response_error(r, *args, **kwargs):
 def pretty_print(data):
     return logging.info(json.dumps(data, sort_keys=True,indent=4, separators=(',', ': ')))
 
-def change_password(url, username, password, newpassword):
-    data = {'newPassword': newpassword}
+def change_password(url, initusername, password, newusername, newpassword):
+    data = {'newPassword': newpassword,
+            'newUsername': newusername}
     conn = requests.Session()
     conn.verify = False
     # conn.hooks.update({'response': raise_response_error})
@@ -117,7 +118,7 @@ def change_password(url, username, password, newpassword):
     conn.headers.update({'Content-Type': 'application/json'})
     conn.headers.update({'Accept': 'application/json'})
     return conn.post("%s/api/endeavour/session?changePassword=true&screenInfo=1" % url, json=data,
-                         auth=HTTPBasicAuth(username, password))
+                         auth=HTTPBasicAuth(initusername, password))
 
 def change_ospassword(url,oldpassword,newpassword):
     data = {"osOldPassword":oldpassword,
