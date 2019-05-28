@@ -1,5 +1,5 @@
 # Script to ad-hoc backup a SQL database in SPP
-# Use sqlrestore.py -h for help
+# Use sqladhocbackup.py -h for help
 
 import json
 import logging
