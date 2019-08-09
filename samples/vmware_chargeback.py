@@ -7,6 +7,7 @@
 # Example:
 #    python3 vmware_chargeback.py --host="https://172.20.49.50" --user="admin" --pass="password123"
 #    python3 vmware_chargeback.py --host="https://172.20.49.50" --user="admin" --pass="password123" --dest="output.csv"
+# Note: Script updated for use in 10.1.4 and up
 #
 
 import json
@@ -72,9 +73,8 @@ def parse_successful_vm_info(vms):
             versize = float(version['properties']['protectionInfo']['transferSize'])
             vermgcapsize = float(version['properties']['storageSummary']['commited'])
             #don't add data transferred for base
-            if not versize >= vermgcapsize:
+            if not version['properties']['protectionInfo']['baseBackup']:
                 busize += versize
-            butime = datetime.datetime.fromtimestamp(version['properties']['protectionInfo']['protectionTime']/1000).strftime('%Y-%m-%d %H:%M:%S')
         vminfo['backupSize'] = get_actual_size(busize + managedCap)
         vminfo['recoveryPoints'] = len(versions)
         vminfoarray.append(copy.deepcopy(vminfo))
