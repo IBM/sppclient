@@ -731,7 +731,7 @@ class slaAPI(SppAPI):
         return resp
 
     def create_cloud_sla(self, name, cloud_server):
-        slainfo = {"name": "slaName", "version": "1.0",
+        slainfo = {"name": name, "version": "1.0",
                    "spec": {"simple": True, "subpolicy": [{"type": "REPLICATION", "software": True,
                                                            "retention": {"age": 15},
                                                            "useEncryption": False,
