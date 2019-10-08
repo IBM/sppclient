@@ -741,9 +741,9 @@ class slaAPI(SppAPI):
                                                            "trigger": {"frequency": 1, "type": "DAILY",
                                                                        "activateDate": 1532584800000},
                                                            "source": "backup",
-                                                           "target": {"href": cloudserver['links']['self']['href'],
-                                                                      "resourceType": cloudserver['provider'],
-                                                                      "id": cloudserver['id'],
+                                                           "target": {"href": cloud_server['links']['self']['href'],
+                                                                      "resourceType": cloud_server['provider'],
+                                                                      "id": cloud_server['id'],
                                                                       "wormProtected": False}}]}}
         resp = self.post(data=slainfo)
         return resp
