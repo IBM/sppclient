@@ -733,7 +733,7 @@ class slaAPI(SppAPI):
 
     def edit_sla(self, id, data):
         response = self.put(
-             path = editsla_resp['id'],
+             path = id,
              data = data
         )
 
