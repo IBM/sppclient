@@ -731,6 +731,14 @@ class slaAPI(SppAPI):
         resp = self.post(data=slainfo)
         return resp
 
+    def edit_sla(self, id, data):
+        response = self.put(
+             path = editsla_resp['id'],
+             data = data
+        )
+
+        return response
+
     def create_cloud_sla(self, name, cloud_server):
         slainfo = {"name": name, "version": "1.0",
                    "spec": {"simple": True, "subpolicy": [{"type": "REPLICATION", "software": True,
