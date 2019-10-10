@@ -733,8 +733,8 @@ class slaAPI(SppAPI):
 
     def edit_sla(self, id, data):
         response = self.put(
-             path = id,
-             data = data
+            path=id,
+            data=data
         )
 
         return response
@@ -1106,7 +1106,8 @@ class keyAPI(SppAPI):
     def register_azure_key(self, cloud_data):
         key_data = {"name": "azurekey1", "keytype": "iam_key", "access": cloud_data['api_key'],
                     "secret": cloud_data['api_secret']}
-        registered_key = self.spp_session.post(data=key_data, path='/api/identity/key')
+        registered_key = self.spp_session.post(
+            data=key_data, path='/api/identity/key')
         return registered_key
 
 
@@ -1118,12 +1119,14 @@ class cloudAPI(SppAPI):
     def get_buckets(self, cloud_data, registered_key):
         data = {"provider": cloud_data['provider'], "accesskey": registered_key['links']['self']['href'],
                 "properties": {"endpoint": cloud_data['endpoint']}}
-        buckets = self.spp_session.post(data=data, path='/api/cloud' + '?action=getBuckets')['buckets']
+        buckets = self.spp_session.post(
+            data=data, path='/api/cloud' + '?action=getBuckets')['buckets']
         return buckets
-    
+
     def register_azure_cloud(self, cloud_data, registered_key, cloud_bucket):
         data = {"type": "s3", "provider": cloud_data['provider'], "accesskey": registered_key['links']['self']['href'],
-            "properties": {"type": "s3", "endpoint": cloud_data['endpoint'], "bucket": cloud_bucket['id']},
-            "name": "testazure11"}
-        cloud_server = self.spp_session.post(data=data, path='ngp/cloud')['response']
+                "properties": {"type": "s3", "endpoint": cloud_data['endpoint'], "bucket": cloud_bucket['id']},
+                "name": "testazure11"}
+        cloud_server = self.spp_session.post(
+            data=data, path='ngp/cloud')['response']
         return cloud_server
