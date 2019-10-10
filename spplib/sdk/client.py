@@ -757,7 +757,7 @@ class slaAPI(SppAPI):
         resp = self.post(data=slainfo)
         return resp
 
-    def assign_sla(self, instance, sla, subtype):
+    def assign_sla(self, instance, sla, subtype, target='application'):
         applySLAPolicies = {"subtype": subtype,
                             "version": "1.0",
                             "resources": [{
@@ -768,7 +768,10 @@ class slaAPI(SppAPI):
                                 "href": sla['links']['self']['href'],
                                 "id":sla['id'],
                                 "name":sla['name']}]}
-        return self.spp_session.post(data=applySLAPolicies, path='ngp/application?action=applySLAPolicies')
+        
+        # Added target variable to make the function more generic (ex. 'hypervisor' or 'application')
+        # without breaking backwards compatibility thanks to target defaulting to 'application'.
+        return self.spp_session.post(data=applySLAPolicies, path='ngp/'+target+'?action=applySLAPolicies')
 
     def assign_hypervisorsla(self, instance_href, instance_id, instance_metadataPath, sla_href, sla_id, sla_name, subtype):
         applySLAPolicies = {"subtype": subtype,
