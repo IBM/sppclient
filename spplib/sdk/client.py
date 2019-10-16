@@ -687,7 +687,6 @@ class HypervAPI(SppAPI):
 
         return self.spp_session.post(data=applyoptionsdata, path='ngp/hypervisor?action=applyOptions')
 
-
 class SqlAPI(SppAPI):
     def __init__(self, spp_session):
         super(SqlAPI, self).__init__(spp_session, 'sql')
@@ -720,14 +719,14 @@ class slaAPI(SppAPI):
             if sla['name'] == name:
                 return sla
 
-    def createSla(self, name):
+    def createSla(self, name, site="Primary"):
         slainfo = {"name": name,
                    "version": "1.0",
                    "spec": {"simple": True,
                             "subpolicy": [{"type": "REPLICATION",
                                            "software": True, "retention": {"age": 15},
                                            "trigger": {"frequency": 1, "type": "DAILY", "activateDate": 1524110400000},
-                                           "site": "Primary"}]}}
+                                           "site": site}]}}
         resp = self.post(data=slainfo)
         return resp
 
@@ -739,13 +738,13 @@ class slaAPI(SppAPI):
 
         return response
 
-    def create_cloud_sla(self, name, cloud_server):
+    def create_cloud_sla(self, name, cloud_server, site="Primary"):
         slainfo = {"name": name, "version": "1.0",
                    "spec": {"simple": True, "subpolicy": [{"type": "REPLICATION", "software": True,
                                                            "retention": {"age": 15},
                                                            "useEncryption": False,
                                                            "trigger": {"frequency": 1, "type": "DAILY",
-                                                                       "activateDate": 1532577600000}, "site": "Primary"},
+                                                                       "activateDate": 1532577600000}, "site": site},
                                                           {"type": "SPPOFFLOAD", "retention": {},
                                                            "trigger": {"frequency": 1, "type": "DAILY",
                                                                        "activateDate": 1532584800000},
@@ -757,7 +756,9 @@ class slaAPI(SppAPI):
         resp = self.post(data=slainfo)
         return resp
 
-    def assign_sla(self, instance, sla, subtype):
+    def assign_sla(self, instance, sla, subtype, target='application'):
+    # Added target variable to make the function more generic (ex. 'hypervisor' or 'application')
+    # without breaking backwards compatibility thanks to target defaulting to 'application'.
         applySLAPolicies = {"subtype": subtype,
                             "version": "1.0",
                             "resources": [{
@@ -768,7 +769,8 @@ class slaAPI(SppAPI):
                                 "href": sla['links']['self']['href'],
                                 "id":sla['id'],
                                 "name":sla['name']}]}
-        return self.spp_session.post(data=applySLAPolicies, path='ngp/application?action=applySLAPolicies')
+
+        return self.spp_session.post(data=applySLAPolicies, path='ngp/'+target+'?action=applySLAPolicies')
 
     def assign_hypervisorsla(self, instance_href, instance_id, instance_metadataPath, sla_href, sla_id, sla_name, subtype):
         applySLAPolicies = {"subtype": subtype,
@@ -1161,8 +1163,8 @@ class keyAPI(SppAPI):
     def __init__(self, spp_session):
         super(keyAPI, self).__init__(spp_session, 'key')
 
-    def register_azure_key(self, cloud_data):
-        key_data = {"name": "azurekey1", "keytype": "iam_key", "access": cloud_data['api_key'],
+    def register_azure_key(self, cloud_data, name="azurekey1"):
+        key_data = {"name": name, "keytype": "iam_key", "access": cloud_data['api_key'],
                     "secret": cloud_data['api_secret']}
         registered_key = self.spp_session.post(
             data=key_data, path='/api/identity/key')
@@ -1181,10 +1183,81 @@ class cloudAPI(SppAPI):
             data=data, path='/api/cloud' + '?action=getBuckets')['buckets']
         return buckets
 
-    def register_azure_cloud(self, cloud_data, registered_key, cloud_bucket):
+    def register_azure_cloud(self, cloud_data, registered_key, cloud_bucket, name="testazure11"):
         data = {"type": "s3", "provider": cloud_data['provider'], "accesskey": registered_key['links']['self']['href'],
                 "properties": {"type": "s3", "endpoint": cloud_data['endpoint'], "bucket": cloud_bucket['id']},
-                "name": "testazure11"}
+                "name": name}
         cloud_server = self.spp_session.post(
             data=data, path='ngp/cloud')['response']
         return cloud_server
+
+class catalogAPI(SppAPI):
+
+    def __init__(self, spp_session):
+        super(catalogAPI, self).__init__(spp_session, 'ngp/catalog')
+    
+    # Assign an SLA for your SPP catalog backup.
+    def assign_sla(self, sla):
+        SLAPolicies = {
+            "subtype":"catalog",
+            "version":"1.0",
+            "slapolicies": [{
+                "href": sla['links']['self']['href'],
+                "id":sla['id'],
+                "name":sla['name']
+            }]
+        }
+
+        return self.spp_session.post(data=SLAPolicies, path='ngp/catalog/system?action=applySLAPolicies')
+
+    # Returns a previously defined (by assign_sla()) backup job.
+    def get_job(self):
+        jobs = self.spp_session.get(path='api/endeavour/job')['jobs']
+        for job in jobs:
+            if job['subType'] == "catalog":
+                return job
+
+        raise Exception("No SLA assigned for the catalog. You have to run assign_sla() first.")
+    
+    # Runs provided backup job and returns status similarly to JobAPI.monitor() (ex. "COMPLETED").
+    def run_backup_job(self, job):
+        self.spp_session.post(path="api/endeavour/job/"+job['id']+"?action=start")
+        job_status = JobAPI(self.spp_session).status(job['id'])
+
+        _, session_status = JobAPI(self.spp_session).monitor(job_status, job['id'], job['name'])
+
+        return session_status
+
+    # Restores your SPP catalog from the latest backup in the storage of a given id.
+    def run_restore_job(self, global_config, storage_id):
+        path = '?view=catalogbackup&pageSize=100&sort=[{"property":"creationTime","direction":"DESC"}]&filter=[{"property":"type","value":"vsnap","op":"="}]'
+        snapshots = self.spp_session.get(path='api/storage/'+storage_id+path)['snapshots']
+        href = snapshots[0]['links']['self']['href']
+
+        restore_options = {
+            "subtype":"catalog",
+            "spec": {
+                "source":[{
+                    "href":href
+                }],"options":{
+                    "mode":"production"
+                },"subpolicy":[{}],"script":{}
+            }
+        }
+        
+        # Initiate the restore.
+        response = self.post(path='/system?action=restore', data=restore_options)
+
+        
+        url = global_config.serverurl + '/api/lifecycle/ping'
+        time.sleep(200) # Wait for the server to actually go down.
+
+        # Periodically check if the server is back up yet.
+        # (Wait out "Server is being brought up. Wait...")
+        for i in range(90):
+            resp = requests.get(url, verify = False)
+            if resp.status_code == 200:
+                return response
+            time.sleep(10)
+        
+        raise Exception('Server is taking too long to respond!')
