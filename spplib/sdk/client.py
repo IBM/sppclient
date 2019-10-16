@@ -840,6 +840,64 @@ class restoreAPI(SppAPI):
         # return sppAPI(session, 'ngp/application').post(path='?action=restore', data=restore)['response']
         return self.spp_session.post(data=restore, path='ngp/application?action=restore')['response']
 
+    def restore_vm_clone(self, subType, vm_href, vm_name, vm_id, vm_version, site_href):
+        restore = {
+            "subType": "vmware",
+            "spec": {
+                "source": [
+                    {
+                        "href": vm_href,
+                        "metadata": {
+                            "name": vm_name
+                        },
+                        "resourceType": "vm",
+                        "id": vm_id,
+                        "include": True,
+                        "version": {
+                            "href": vm_version,
+                            "metadata": {
+                                "useLatest": True,
+                                "name": "Use Latest"
+                            }
+                        }
+                    }
+                ],
+                "subpolicy": [
+                    {
+                        "type": "IV",
+                        "destination": {
+                            "systemDefined": True,
+                            "mapvirtualnetwork": {},
+                            "mapRRPdatastore": {},
+                            "mapsubnet": {},
+                            "mapvm": {}
+                        },
+                        "source": None,
+                        "option": {
+                            "poweron": False,
+                            "allowvmoverwrite": False,
+                            "continueonerror": True,
+                            "autocleanup": True,
+                            "allowsessoverwrite": True,
+                            "restorevmtag": None,
+                            "mode": "clone",
+                            "vmscripts": False,
+                            "protocolpriority": "iSCSI",
+                            "IR": False,
+                            "streaming": True
+                        }
+                    }
+                ]
+            },
+            "script": {
+                "preGuest": None,
+                "postGuest": None,
+                "continueScriptsOnError": False
+            }
+        }
+
+        return self.spp_session.post(data=restore, path='ngp/hypervisor?action=restore')['response']
+
     def restoreHyperV(self, subType, hyperv_href, hyperv_name, hyperv_id, hyperv_version, site_href):
         restore = {"subType": subType,
                    "spec": {
