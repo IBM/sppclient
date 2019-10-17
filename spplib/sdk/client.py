@@ -1080,6 +1080,70 @@ class restoreAPI(SppAPI):
                                    "isOffload": None}}}], "view": "applicationview"}}
         return self.spp_session.post(data=restore, path='ngp/application?action=restore')['response']
 
+    def restore_hypervisor_production(self, hv_type, hv_href, hv_name, hv_id, hv_version, site_href):
+        data = {
+            "subType": hv_type,
+            "spec": {
+                "source": [
+                    {
+                        "href": hv_href,
+                        "metadata": {
+                            "name": hv_name
+                        },
+                        "resourceType": "vm",
+                        "id": hv_id,
+                        "include": True,
+                        "version": {
+                            "href": hv_version,
+                            "metadata": {
+                                "useLatest": True,
+                                "name": "Use Latest"
+                            }
+                        }
+                    }
+                ],
+                "subpolicy": [
+                    {
+                        "type": "IV",
+                        "destination": {
+                            "systemDefined": True,
+                            "mapvirtualnetwork": {},
+                            "mapRRPdatastore": {},
+                            "mapsubnet": {},
+                            "mapvm": {}
+                        },
+                        "source": {
+                            "copy": {
+                                "site": {
+                                    "href": site_href
+                                }
+                            }
+                        },
+                        "option": {
+                            "poweron": False,
+                            "allowvmoverwrite": True,
+                            "continueonerror": True,
+                            "autocleanup": True,
+                            "allowsessoverwrite": True,
+                            "restorevmtag": None,
+                            "mode": "recovery",
+                            "vmscripts": False,
+                            "protocolpriority": "iSCSI",
+                            "IR": False,
+                            "streaming": True
+                        }
+                    }
+                ]
+            },
+            "script": {
+                "preGuest": None,
+                "postGuest": None,
+                "continueScriptsOnError": False
+            }
+        }
+        
+        return self.spp_session.post(data=data, path='ngp/hypervisor?action=restore')['response']
+
     def getStatus(self, job_id):
         jobsession = self.spp_session.get(
             path='api/endeavour/jobsession?pageSize=200')['sessions']
