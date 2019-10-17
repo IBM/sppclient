@@ -687,6 +687,7 @@ class HypervAPI(SppAPI):
 
         return self.spp_session.post(data=applyoptionsdata, path='ngp/hypervisor?action=applyOptions')
 
+
 class SqlAPI(SppAPI):
     def __init__(self, spp_session):
         super(SqlAPI, self).__init__(spp_session, 'sql')
@@ -757,8 +758,8 @@ class slaAPI(SppAPI):
         return resp
 
     def assign_sla(self, instance, sla, subtype, target='application'):
-    # Added target variable to make the function more generic (ex. 'hypervisor' or 'application')
-    # without breaking backwards compatibility thanks to target defaulting to 'application'.
+        # Added target variable to make the function more generic (ex. 'hypervisor' or 'application')
+        # without breaking backwards compatibility thanks to target defaulting to 'application'.
         applySLAPolicies = {"subtype": subtype,
                             "version": "1.0",
                             "resources": [{
@@ -842,7 +843,7 @@ class restoreAPI(SppAPI):
         # return sppAPI(session, 'ngp/application').post(path='?action=restore', data=restore)['response']
         return self.spp_session.post(data=restore, path='ngp/application?action=restore')['response']
 
-    def restore_vm_clone(self, subType, vm_href, vm_name, vm_id, vm_version, site_href):
+    def restore_vm_clone(self, subType, vm_href, vm_name, vm_id, vm_version, vm_clone_name):
         restore = {
             "subType": "vmware",
             "spec": {
@@ -872,7 +873,11 @@ class restoreAPI(SppAPI):
                             "mapvirtualnetwork": {},
                             "mapRRPdatastore": {},
                             "mapsubnet": {},
-                            "mapvm": {}
+                            "mapvm": {
+                                vm_href: {
+                                    "name": vm_clone_name
+                                }
+                            }
                         },
                         "source": None,
                         "option": {
@@ -1191,16 +1196,17 @@ class cloudAPI(SppAPI):
             data=data, path='ngp/cloud')['response']
         return cloud_server
 
+
 class catalogAPI(SppAPI):
 
     def __init__(self, spp_session):
         super(catalogAPI, self).__init__(spp_session, 'ngp/catalog')
-    
+
     # Assign an SLA for your SPP catalog backup.
     def assign_sla(self, sla):
         SLAPolicies = {
-            "subtype":"catalog",
-            "version":"1.0",
+            "subtype": "catalog",
+            "version": "1.0",
             "slapolicies": [{
                 "href": sla['links']['self']['href'],
                 "id":sla['id'],
@@ -1217,47 +1223,51 @@ class catalogAPI(SppAPI):
             if job['subType'] == "catalog":
                 return job
 
-        raise Exception("No SLA assigned for the catalog. You have to run assign_sla() first.")
-    
+        raise Exception(
+            "No SLA assigned for the catalog. You have to run assign_sla() first.")
+
     # Runs provided backup job and returns status similarly to JobAPI.monitor() (ex. "COMPLETED").
     def run_backup_job(self, job):
-        self.spp_session.post(path="api/endeavour/job/"+job['id']+"?action=start")
+        self.spp_session.post(path="api/endeavour/job/" +
+                              job['id']+"?action=start")
         job_status = JobAPI(self.spp_session).status(job['id'])
 
-        _, session_status = JobAPI(self.spp_session).monitor(job_status, job['id'], job['name'])
+        _, session_status = JobAPI(self.spp_session).monitor(
+            job_status, job['id'], job['name'])
 
         return session_status
 
     # Restores your SPP catalog from the latest backup in the storage of a given id.
     def run_restore_job(self, global_config, storage_id):
         path = '?view=catalogbackup&pageSize=100&sort=[{"property":"creationTime","direction":"DESC"}]&filter=[{"property":"type","value":"vsnap","op":"="}]'
-        snapshots = self.spp_session.get(path='api/storage/'+storage_id+path)['snapshots']
+        snapshots = self.spp_session.get(
+            path='api/storage/'+storage_id+path)['snapshots']
         href = snapshots[0]['links']['self']['href']
 
         restore_options = {
-            "subtype":"catalog",
+            "subtype": "catalog",
             "spec": {
-                "source":[{
-                    "href":href
-                }],"options":{
-                    "mode":"production"
-                },"subpolicy":[{}],"script":{}
+                "source": [{
+                    "href": href
+                }], "options": {
+                    "mode": "production"
+                }, "subpolicy": [{}], "script": {}
             }
         }
-        
-        # Initiate the restore.
-        response = self.post(path='/system?action=restore', data=restore_options)
 
-        
+        # Initiate the restore.
+        response = self.post(path='/system?action=restore',
+                             data=restore_options)
+
         url = global_config.serverurl + '/api/lifecycle/ping'
-        time.sleep(200) # Wait for the server to actually go down.
+        time.sleep(200)  # Wait for the server to actually go down.
 
         # Periodically check if the server is back up yet.
         # (Wait out "Server is being brought up. Wait...")
         for i in range(90):
-            resp = requests.get(url, verify = False)
+            resp = requests.get(url, verify=False)
             if resp.status_code == 200:
                 return response
             time.sleep(10)
-        
+
         raise Exception('Server is taking too long to respond!')
