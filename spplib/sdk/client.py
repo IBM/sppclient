@@ -1335,3 +1335,29 @@ class catalogAPI(SppAPI):
             time.sleep(10)
 
         raise Exception('Server is taking too long to respond!')
+
+class vadpAPI(SppAPI):
+    def __init__(self, spp_session):
+        super(vadpAPI, self).__init__(spp_session, 'ngp/vadp')
+
+    # Points to site "Secondary" by default.
+    def install_vadp(self, ip_address, username, password, site_id="2000"):
+        data = {
+            "pushinstall":{
+                "hostAddress": ip_address
+            },
+            "identityId":{
+                "username": username,
+                "password": password
+            },
+            "registration":{
+                "siteId":site_id
+            }
+        }
+
+        response = self.post(
+            path = '?action=installandregister',
+            data = data
+        )
+
+        return response['response']
