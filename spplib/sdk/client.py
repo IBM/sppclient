@@ -1361,3 +1361,27 @@ class vadpAPI(SppAPI):
         )
 
         return response['response']
+
+    def suspend_vadp(self, vadp_id):
+
+        response = self.spp_session.post(
+            path = "api/vadp/{0}?action=suspend".format(vadp_id)
+        )
+
+        return response
+
+    def resume_vadp(self, vadp_id):
+
+        response = self.spp_session.post(
+            path = "api/vadp/{0}?action=resume".format(vadp_id)
+        )
+
+        return response
+
+    def uninstall_vadp(self, vadp_id):
+        
+        response = self.spp_session.post(
+            path = "api/vadp/{0}?action=uninstall".format(vadp_id)
+        )
+
+        return response
