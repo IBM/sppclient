@@ -1018,6 +1018,37 @@ class restoreAPI(SppAPI):
         }
         return self.spp_session.post(data=restore, path='ngp/hypervisor?action=restorefile')['response']
 
+    def fileRestoreVMAltLoc(self, sourcehref, resourcetype, copylink, copyversion, vm_href, target_directory):
+        restore = {"spec": {
+            "view": "",
+            "source": [{
+                    "href": sourcehref,
+                    "resourceType": resourcetype,
+                    "include": True,
+                    "version": {
+                        "copy": {
+                            "href": copylink
+                        },
+                        "href": copyversion
+                    }
+            }],
+            "subpolicy": [{
+                "option": {
+                    "overwriteExistingFile": True,
+                    "filePath": target_directory
+                },
+                "destination": {
+                    "target": {
+                        "href": vm_href,
+                        "resourceType": "vm"
+                    }
+                }
+            }]
+        }
+        }
+
+        return self.spp_session.post(data=restore, path='ngp/hypervisor?action=restorefile')['response']
+
     def restoreLog(self, subType, database_href, database_version, database_torestore, database_id, restoreName, restoreTime):
         restore = {"subType": subType,
                    "script":
@@ -1204,7 +1235,7 @@ class restoreAPI(SppAPI):
                 "continueScriptsOnError": False
             }
         }
-        
+
         return self.spp_session.post(data=data, path='ngp/hypervisor?action=restore')['response']
 
     def getStatus(self, job_id):
