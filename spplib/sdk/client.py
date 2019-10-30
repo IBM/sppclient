@@ -1429,3 +1429,79 @@ class catalogAPI(SppAPI):
             time.sleep(10)
 
         raise Exception('Server is taking too long to respond!')
+
+class vadpAPI(SppAPI):
+    def __init__(self, spp_session):
+        super(vadpAPI, self).__init__(spp_session, 'ngp/vadp')
+
+    # Points to site "Secondary" by default.
+    def install_vadp(self, ip_address, username, password, site_id="2000"):
+        data = {
+            "pushinstall":{
+                "hostAddress": ip_address
+            },
+            "identityId":{
+                "username": username,
+                "password": password
+            },
+            "registration":{
+                "siteId":site_id
+            }
+        }
+
+        response = self.post(
+            path = '?action=installandregister',
+            data = data
+        )
+
+        return response['response']
+
+    def suspend_vadp(self, vadp_id):
+
+        response = self.spp_session.post(
+            path = "api/vadp/{0}?action=suspend".format(vadp_id)
+        )
+
+        return response
+
+    def resume_vadp(self, vadp_id):
+
+        response = self.spp_session.post(
+            path = "api/vadp/{0}?action=resume".format(vadp_id)
+        )
+
+        return response
+
+    def uninstall_vadp(self, vadp_id):
+        
+        response = self.spp_session.post(
+            path = "api/vadp/{0}?action=uninstall".format(vadp_id)
+        )
+
+        return response
+
+class vsnapAPI(SppAPI):
+    def __init__(self, spp_session):
+        super(vsnapAPI, self).__init__(spp_session, 'api/storage')
+    
+    def install_vsnap(self, data):
+        response = self.post(data=data)
+
+        return response
+
+    def initialize_vsnap(self, vsnap_id):
+        response = self.post(
+                path="/{0}/management?action=init".format(vsnap_id),
+                data={"async": True}
+        )
+
+        for i in range(30):
+            status = self.post(path="{0}/?action=refresh".format(vsnap_id))['initializeStatus']
+            time.sleep(15)
+            if status != "Initializing":
+                break
+
+        if status != "Ready":
+            raise Exception("Initialization failed")
+
+        return response
