@@ -1385,3 +1385,29 @@ class vadpAPI(SppAPI):
         )
 
         return response
+
+class vsnapAPI(SppAPI):
+    def __init__(self, spp_session):
+        super(vsnapAPI, self).__init__(spp_session, 'api/storage')
+    
+    def install_vsnap(self, data):
+        response = self.post(data=data)
+
+        return response
+
+    def initialize_vsnap(self, vsnap_id):
+        response = self.post(
+                path="/{0}/management?action=init".format(vsnap_id),
+                data={"async": True}
+        )
+
+        for i in range(30):
+            status = self.post(path="{0}/?action=refresh".format(vsnap_id))['initializeStatus']
+            time.sleep(15)
+            if status != "Initializing":
+                break
+
+        if status != "Ready":
+            raise Exception("Initialization failed")
+
+        return response
