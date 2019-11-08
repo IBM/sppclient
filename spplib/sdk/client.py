@@ -757,15 +757,25 @@ class slaAPI(SppAPI):
         resp = self.post(data=slainfo)
         return resp
 
-    def assign_sla(self, instance, sla, subtype, target='application'):
+    def assign_sla(self, instances, sla, subtype, target='application'):
         # Added target variable to make the function more generic (ex. 'hypervisor' or 'application')
         # without breaking backwards compatibility thanks to target defaulting to 'application'.
+
+        # Added functionality to add multiple instances to apply policies to them
+        if not isinstance(instances, list):
+            instances = [instances]
+
+        # Get resources from instance
+        temp_resources = []
+        for instance in instances:
+            temp_resources.append({
+                            "href": instance['links']['self']['href'],
+                            "id": instance['id'],
+                            "metadataPath": instance['metadataPath']})
+
         applySLAPolicies = {"subtype": subtype,
                             "version": "1.0",
-                            "resources": [{
-                                "href": instance['links']['self']['href'],
-                                "id":instance['id'],
-                                "metadataPath":instance['metadataPath']}],
+                            "resources": temp_resources,
                             "slapolicies": [{
                                 "href": sla['links']['self']['href'],
                                 "id":sla['id'],
