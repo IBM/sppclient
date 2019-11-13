@@ -1100,7 +1100,6 @@ class restoreAPI(SppAPI):
         },
         "script": {}
         }
-        print(restore)
         return self.spp_session.post(data=restore, path='ngp/hypervisor?action=restore')['response']
 
     def fileRestoreVM(self, sourcehref, resourcetype, copylink, copyversion):
