@@ -1057,6 +1057,42 @@ class restoreAPI(SppAPI):
 
         return self.spp_session.post(data=restore, path='ngp/hypervisor?action=restore')['response']
 
+    def restore_multiple_vm(self, vm_info_list):
+        restore = {
+        "subType": "vmware",
+        "spec": {
+        "source": vm_info_list,
+        "subpolicy": [{
+            "type": "IV",
+            "destination": {
+            "systemDefined": True
+            },
+            "source": {
+            "copy": {
+                "site": {
+                "href": None
+                },
+                "isOffload": None
+            }
+            },
+            "option": {
+            "protocolpriority": "iSCSI",
+            "poweron": False,
+            "continueonerror": True,
+            "autocleanup": True,
+            "allowsessoverwrite": True,
+            "mode": "test",
+            "vmscripts": False,
+            "restorevmtag": True,
+            "update_vmx": True
+            }
+        }]
+        },
+        "script": {}
+        }
+        print(restore)
+        return self.spp_session.post(data=restore, path='ngp/hypervisor?action=restore')['response']
+
     def fileRestoreVM(self, sourcehref, resourcetype, copylink, copyversion):
         restore = {"spec": {
             "view": "",
