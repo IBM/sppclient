@@ -740,20 +740,50 @@ class slaAPI(SppAPI):
         return response
 
     def create_cloud_sla(self, name, cloud_server, site="Primary"):
-        slainfo = {"name": name, "version": "1.0",
-                   "spec": {"simple": True, "subpolicy": [{"type": "REPLICATION", "software": True,
-                                                           "retention": {"age": 15},
-                                                           "useEncryption": False,
-                                                           "trigger": {"frequency": 1, "type": "DAILY",
-                                                                       "activateDate": 1532577600000}, "site": site},
-                                                          {"type": "SPPOFFLOAD", "retention": {},
-                                                           "trigger": {"frequency": 1, "type": "DAILY",
-                                                                       "activateDate": 1532584800000},
-                                                           "source": "backup",
-                                                           "target": {"href": cloud_server['links']['self']['href'],
-                                                                      "resourceType": cloud_server['provider'],
-                                                                      "id": cloud_server['id'],
-                                                                      "wormProtected": False}}]}}
+        slainfo = {
+            "name": name,
+            "version": "1.0",
+            "spec": {
+                "simple": True,
+                "subpolicy": [{
+                        "type": "REPLICATION",
+                        "software": True,
+                        "retention": {
+                            "age": 15
+                        },
+                        "useEncryption": False,
+                        "trigger": {},
+                        "site": site
+                    },
+                    {
+                        "type": "SPPOFFLOAD",
+                        "retention": {},
+                        "trigger": {},
+                        "source": "backup",
+                        "target": {
+                            "href": cloud_server['links']['self']['href'],
+                            "resourceType": cloud_server['provider'],
+                            "id": cloud_server['id'],
+                            "wormProtected": False
+                        }
+                    },
+                    {
+                        "type": "SPPARCHIVE",
+                        "retention": {
+                            "age": 90
+                        },
+                        "trigger": {},
+                        "source": "backup",
+                        "target": {
+                            "href": cloud_server['links']['self']['href'],
+                            "resourceType": cloud_server['provider'],
+                            "id": "4",
+                            "wormProtected": False
+                        }
+                    }
+                ]
+            }
+        }
         resp = self.post(data=slainfo)
         return resp
 
@@ -769,9 +799,9 @@ class slaAPI(SppAPI):
         temp_resources = []
         for instance in instances:
             temp_resources.append({
-                            "href": instance['links']['self']['href'],
-                            "id": instance['id'],
-                            "metadataPath": instance['metadataPath']})
+                "href": instance['links']['self']['href'],
+                "id": instance['id'],
+                "metadataPath": instance['metadataPath']})
 
         applySLAPolicies = {"subtype": subtype,
                             "version": "1.0",
@@ -955,8 +985,8 @@ class restoreAPI(SppAPI):
         return self.spp_session.post(data=restore, path='ngp/hypervisor?action=restore')['response']
 
     def restoreVMCloneAlteranteHost(self, subType, hyperv_href, hyperv_name,
-                                        hyperv_id, hyperv_latestversion, host_name, host_resource_type,
-                                        host_href, map_virtual_ntwk_link, network_href, vol_href, map_RRP, vm_clone_name):
+                                    hyperv_id, hyperv_latestversion, host_name, host_resource_type,
+                                    host_href, map_virtual_ntwk_link, network_href, vol_href, map_RRP, vm_clone_name):
 
         restore = {
             "subType": "vmware",
@@ -1069,36 +1099,36 @@ class restoreAPI(SppAPI):
 
     def restore_multiple_vm(self, vm_info_list):
         restore = {
-        "subType": "vmware",
-        "spec": {
-        "source": vm_info_list,
-        "subpolicy": [{
-            "type": "IV",
-            "destination": {
-            "systemDefined": True
+            "subType": "vmware",
+            "spec": {
+                "source": vm_info_list,
+                "subpolicy": [{
+                    "type": "IV",
+                    "destination": {
+                        "systemDefined": True
+                    },
+                    "source": {
+                        "copy": {
+                            "site": {
+                                "href": None
+                            },
+                            "isOffload": None
+                        }
+                    },
+                    "option": {
+                        "protocolpriority": "iSCSI",
+                        "poweron": False,
+                        "continueonerror": True,
+                        "autocleanup": True,
+                        "allowsessoverwrite": True,
+                        "mode": "test",
+                        "vmscripts": False,
+                        "restorevmtag": True,
+                        "update_vmx": True
+                    }
+                }]
             },
-            "source": {
-            "copy": {
-                "site": {
-                "href": None
-                },
-                "isOffload": None
-            }
-            },
-            "option": {
-            "protocolpriority": "iSCSI",
-            "poweron": False,
-            "continueonerror": True,
-            "autocleanup": True,
-            "allowsessoverwrite": True,
-            "mode": "test",
-            "vmscripts": False,
-            "restorevmtag": True,
-            "update_vmx": True
-            }
-        }]
-        },
-        "script": {}
+            "script": {}
         }
         return self.spp_session.post(data=restore, path='ngp/hypervisor?action=restore')['response']
 
@@ -1371,7 +1401,7 @@ class keyAPI(SppAPI):
     def __init__(self, spp_session):
         super(keyAPI, self).__init__(spp_session, 'key')
 
-    def register_azure_key(self, cloud_data, name="azurekey1"):
+    def register_key(self, cloud_data, name="azurekey1"):
         key_data = {"name": name, "keytype": "iam_key", "access": cloud_data['api_key'],
                     "secret": cloud_data['api_secret']}
         registered_key = self.spp_session.post(
@@ -1384,17 +1414,32 @@ class cloudAPI(SppAPI):
     def __init__(self, spp_session):
         super(cloudAPI, self).__init__(spp_session, 'cloud')
 
-    def get_buckets(self, cloud_data, registered_key):
+    def get_azure_buckets(self, cloud_data, registered_key):
         data = {"provider": cloud_data['provider'], "accesskey": registered_key['links']['self']['href'],
                 "properties": {"endpoint": cloud_data['endpoint']}}
         buckets = self.spp_session.post(
             data=data, path='/api/cloud' + '?action=getBuckets')['buckets']
         return buckets
 
-    def register_azure_cloud(self, cloud_data, registered_key, cloud_bucket, name="testazure11"):
+    def get_aws_buckets(self, cloud_data, registered_key):
+        data = {"provider": cloud_data['provider'], "accesskey": registered_key['links']['self']['href'],
+                "properties": {"region": cloud_data['region']}}
+        buckets = self.spp_session.post(
+            data=data, path='/api/cloud' + '?action=getBuckets')['buckets']
+        return buckets
+
+    def register_azure_cloud(self, cloud_data, registered_key, cloud_bucket, archive_bucket, name="testazure11"):
         data = {"type": "s3", "provider": cloud_data['provider'], "accesskey": registered_key['links']['self']['href'],
-                "properties": {"type": "s3", "endpoint": cloud_data['endpoint'], "bucket": cloud_bucket['id']},
-                "name": name}
+                "properties": {"type": "s3", "endpoint": cloud_data['endpoint'], "bucket": cloud_bucket['id'],
+                               "archiveBucket": archive_bucket['id']}, "name": name}
+        cloud_server = self.spp_session.post(
+            data=data, path='ngp/cloud')['response']
+        return cloud_server
+
+    def register_aws_cloud(self, cloud_data, registered_key, cloud_bucket, archive_bucket, name="testazure11"):
+        data = {"type": "s3", "provider": cloud_data['provider'], "accesskey": registered_key['links']['self']['href'],
+                "properties": {"type": "s3", "region": cloud_data['region'], "bucket": cloud_bucket['id'],
+                               "archiveBucket": archive_bucket['id']}, "name": name}
         cloud_server = self.spp_session.post(
             data=data, path='ngp/cloud')['response']
         return cloud_server
@@ -1475,6 +1520,7 @@ class catalogAPI(SppAPI):
 
         raise Exception('Server is taking too long to respond!')
 
+
 class vadpAPI(SppAPI):
     def __init__(self, spp_session):
         super(vadpAPI, self).__init__(spp_session, 'ngp/vadp')
@@ -1482,21 +1528,21 @@ class vadpAPI(SppAPI):
     # Points to site "Secondary" by default.
     def install_vadp(self, ip_address, username, password, site_id="2000"):
         data = {
-            "pushinstall":{
+            "pushinstall": {
                 "hostAddress": ip_address
             },
-            "identityId":{
+            "identityId": {
                 "username": username,
                 "password": password
             },
-            "registration":{
-                "siteId":site_id
+            "registration": {
+                "siteId": site_id
             }
         }
 
         response = self.post(
-            path = '?action=installandregister',
-            data = data
+            path='?action=installandregister',
+            data=data
         )
 
         return response['response']
@@ -1504,7 +1550,7 @@ class vadpAPI(SppAPI):
     def suspend_vadp(self, vadp_id):
 
         response = self.spp_session.post(
-            path = "api/vadp/{0}?action=suspend".format(vadp_id)
+            path="api/vadp/{0}?action=suspend".format(vadp_id)
         )
 
         return response
@@ -1512,23 +1558,24 @@ class vadpAPI(SppAPI):
     def resume_vadp(self, vadp_id):
 
         response = self.spp_session.post(
-            path = "api/vadp/{0}?action=resume".format(vadp_id)
+            path="api/vadp/{0}?action=resume".format(vadp_id)
         )
 
         return response
 
     def uninstall_vadp(self, vadp_id):
-        
+
         response = self.spp_session.post(
-            path = "api/vadp/{0}?action=uninstall".format(vadp_id)
+            path="api/vadp/{0}?action=uninstall".format(vadp_id)
         )
 
         return response
 
+
 class vsnapAPI(SppAPI):
     def __init__(self, spp_session):
         super(vsnapAPI, self).__init__(spp_session, 'api/storage')
-    
+
     def install_vsnap(self, data):
         response = self.post(data=data)
 
@@ -1536,13 +1583,14 @@ class vsnapAPI(SppAPI):
 
     def initialize_vsnap(self, vsnap_id):
         response = self.post(
-                path="/{0}/management?action=init".format(vsnap_id),
-                data={"async": True}
+            path="/{0}/management?action=init".format(vsnap_id),
+            data={"async": True}
         )
 
         for i in range(30):
-            status = self.post(path="{0}/?action=refresh".format(vsnap_id))['initializeStatus']
-            time.sleep(15)
+            status = self.post(
+                path="{0}/?action=refresh".format(vsnap_id))['initializeStatus']
+            time.sleep(30)
             if status != "Initializing":
                 break
 
