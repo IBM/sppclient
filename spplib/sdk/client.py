@@ -1586,15 +1586,12 @@ class vsnapAPI(SppAPI):
             path="/{0}/management?action=init".format(vsnap_id),
             data={"async": True}
         )
-
         for i in range(30):
+            time.sleep(30)
             status = self.post(
                 path="{0}/?action=refresh".format(vsnap_id))['initializeStatus']
-            time.sleep(30)
             if status != "Initializing":
                 break
-
         if status != "Ready":
             raise Exception("Initialization failed")
-
         return response
