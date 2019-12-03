@@ -746,15 +746,15 @@ class slaAPI(SppAPI):
             "spec": {
                 "simple": True,
                 "subpolicy": [{
-                        "type": "REPLICATION",
-                        "software": True,
-                        "retention": {
+                    "type": "REPLICATION",
+                    "software": True,
+                    "retention": {
                             "age": 15
-                        },
-                        "useEncryption": False,
-                        "trigger": {},
-                        "site": site
                     },
+                    "useEncryption": False,
+                    "trigger": {},
+                    "site": site
+                },
                     {
                         "type": "SPPOFFLOAD",
                         "retention": {},
@@ -766,7 +766,7 @@ class slaAPI(SppAPI):
                             "id": cloud_server['id'],
                             "wormProtected": False
                         }
-                    },
+                },
                     {
                         "type": "SPPARCHIVE",
                         "retention": {
@@ -780,7 +780,7 @@ class slaAPI(SppAPI):
                             "id": "4",
                             "wormProtected": False
                         }
-                    }
+                }
                 ]
             }
         }
@@ -881,6 +881,69 @@ class restoreAPI(SppAPI):
                        "view": "applicationview"}}
 
         # return sppAPI(session, 'ngp/application').post(path='?action=restore', data=restore)['response']
+        return self.spp_session.post(data=restore, path='ngp/application?action=restore')['response']
+
+    def restore_oracle(self, database_href, version_href, version_copy_href, protection_time,
+                       database_name, restore_instance_version, restore_instance_id, database_id,
+                       database_restore_name):
+        restore = {
+            "subType": "oracle",
+            "script": {
+                "preGuest": None,
+                "postGuest": None,
+                "continueScriptsOnError": False
+            },
+            "spec": {
+                "source": [{
+                    "href": database_href,
+                    "resourceType": "database",
+                    "include": True,
+                    "version": {
+                        "href": version_href,
+                        "copy": {
+                            "href": version_copy_href
+                        },
+                        "metadata": {
+                            "useLatest": False,
+                            "protectionTime": protection_time
+                        }
+                    },
+                    "metadata": {
+                        "name": database_name,
+                        "instanceVersion": restore_instance_version,
+                        "instanceId": restore_instance_id,
+                        "useLatest": False
+                    },
+                    "id": database_id
+                }],
+                "subpolicy": [{
+                    "type": "restore",
+                    "mode": "test",
+                    "destination": {
+                        "mapdatabase": {
+                            database_href: {
+                                "name": database_restore_name,
+                                "paths": []
+                            }
+                        },
+                        "targetLocation": "original"
+                    },
+                    "option": {
+                        "autocleanup": True,
+                        "allowsessoverwrite": True,
+                        "continueonerror": True,
+                        "applicationOption": {
+                            "overwriteExistingDb": False,
+                            "recoveryType": "recovery",
+                            "initParams": "source"
+                        }
+                    },
+                    "source": None
+                }],
+                "view": "applicationview"
+            }
+        }
+
         return self.spp_session.post(data=restore, path='ngp/application?action=restore')['response']
 
     def restore_vm_clone(self, subType, vm_href, vm_name, vm_id, vm_version, vm_clone_name):
