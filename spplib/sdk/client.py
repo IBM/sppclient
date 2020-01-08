@@ -1,6 +1,4 @@
-import configparser
 import json
-import pprint
 import os
 import re
 import tempfile
@@ -27,7 +25,7 @@ except ImportError:
 # Uncomment this to see requests and responses.
 # TODO: We need better way and we should log requests and responses in
 # log file.
-#http_client.HTTPConnection.debuglevel = 1
+# http_client.HTTPConnection.debuglevel = 1
 urllib3.disable_warnings()
 
 resource_to_endpoint = {
@@ -594,7 +592,21 @@ class OracleAPI(SppAPI):
                 return inst
 
     def get_databases_in_instance(self, instanceid):
-        return self.get(path="oraclehome/%s/database" % instanceid)
+        return self.get(path="instance/%s/database?from=recovery" % instanceid)
+
+    def get_database_by_name(self, databases, db_name):
+        for db in databases:
+            if db['name'] == db_name:
+                return db
+
+    def get_latest_database_version(self, instanceid, databaseid):
+        version = self.get(
+            path='instance/%s/database/%s/version?from=recovery&sort=[\
+                {"property": "protectionTime", "direction": "DESC"}\
+            ]' % (instanceid, databaseid)
+        )
+
+        return version
 
     def get_database_copy_versions(self, instanceid, databaseid):
         return self.get(path="oraclehome/%s/database/%s" % (instanceid, databaseid) + "/version")
@@ -944,6 +956,7 @@ class restoreAPI(SppAPI):
             }
         }
 
+        print(restore)
         return self.spp_session.post(data=restore, path='ngp/application?action=restore')['response']
 
     def restore_vm_clone(self, subType, vm_href, vm_name, vm_id, vm_version, vm_clone_name):
@@ -1455,8 +1468,12 @@ class searchAPI(SppAPI):
     def __init__(self, spp_session):
         super(searchAPI, self).__init__(spp_session, 'search')
 
-    def get_fileRestoreOptions(self, filename):
-        return self.get(params={'filter': '[{"property":"*","op":"=","value":"%s"}]' % filename})
+    def get_fileRestoreOptions(self, filename, filepath, vmname):
+        return self.get(params={
+            'filter': '[{"property":"name","op":"=","value":"%s"}],\
+            {"property":"location","value":"%s","op":"="},\
+            {"property":"vmName","op":"=","value":"%s"}' 
+            % (filename, filepath, vmname)})
 
 
 class keyAPI(SppAPI):
