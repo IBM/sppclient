@@ -1498,7 +1498,7 @@ class restoreAPI(SppAPI):
                             }
                         },
                         "option": {
-                            "poweron": False,
+                            "poweron": True,
                             "allowvmoverwrite": True,
                             "continueonerror": True,
                             "autocleanup": True,
