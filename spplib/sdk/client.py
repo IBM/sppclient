@@ -592,7 +592,7 @@ class OracleAPI(SppAPI):
                 return inst
 
     def get_databases_in_instance(self, instanceid):
-        return self.get(path="instance/%s/database?from=recovery" % instanceid)
+        return self.get(path="instance/%s/database" % instanceid)
 
     def get_database_by_name(self, databases, db_name):
         for db in databases:
@@ -965,9 +965,10 @@ class restoreAPI(SppAPI):
 
         return self.spp_session.post(data=restore, path='ngp/application?action=restore')['response']
 
-    def restore_oracle(self, database_href, version_href, version_copy_href, protection_time,
-                       database_name, restore_instance_version, restore_instance_id, database_id,
-                       database_restore_name):
+    def restore_oracle(self, database_href, version_href, version_copy_href,
+                       protection_time, database_name, restore_instance_version,
+                       restore_instance_id, database_id, database_restore_name,
+                       mode='test', path=[], overwrite_db=False):
         restore = {
             "subType": "oracle",
             "script": {
@@ -1000,12 +1001,12 @@ class restoreAPI(SppAPI):
                 }],
                 "subpolicy": [{
                     "type": "restore",
-                    "mode": "test",
+                    "mode": mode,
                     "destination": {
                         "mapdatabase": {
                             database_href: {
                                 "name": database_restore_name,
-                                "paths": []
+                                "paths": path
                             }
                         },
                         "targetLocation": "original"
@@ -1015,7 +1016,7 @@ class restoreAPI(SppAPI):
                         "allowsessoverwrite": True,
                         "continueonerror": True,
                         "applicationOption": {
-                            "overwriteExistingDb": False,
+                            "overwriteExistingDb": overwrite_db,
                             "recoveryType": "recovery",
                             "initParams": "source"
                         }
