@@ -723,6 +723,38 @@ class SqlAPI(SppAPI):
     def get_database_copy_versions(self, instanceid, databaseid):
         return self.get(path="instance/%s/database/%s" % (instanceid, databaseid) + '/version?from=recovery&sort=[{"property": "protectionTime", "direction": "DESC"}]')
 
+    def apply_options(self, resource_href, db_id, metadataPath):
+
+        applyoptionsdata = {
+            "resources": [
+                {
+                    "href": resource_href,
+                    "id": db_id,
+                    "metadataPath": metadataPath
+                }
+            ],
+            "subtype": "sql",
+            "options": {
+                "maxParallelStreams": 1,
+                "dbFilesForParallelStreams": "SINGLE_FILE",
+                "backupPreferredNode": "",
+                "logbackup": {
+                    "purgePrimaryLogs": False,
+                    "primaryLogRetentionDays": 3,
+                    "performlogbackup": True,
+                    "rpo": {
+                        "frequency": 30,
+                        "frequencyType": "MINUTE",
+                        "triggerTime": "12:00:00 AM",
+                        "metadata": {
+                            "activateDate": 1578870000000
+                        }
+                    }
+                }
+            }
+        }
+
+        return self.spp_session.post(data=applyoptionsdata, path='ngp/application?action=applyOptions')
 
 class slaAPI(SppAPI):
     def __init__(self, spp_session):
