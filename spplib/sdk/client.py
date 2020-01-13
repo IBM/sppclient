@@ -721,7 +721,7 @@ class SqlAPI(SppAPI):
                 return db
 
     def get_database_copy_versions(self, instanceid, databaseid):
-        return self.get(path="instance/%s/database/%s" % (instanceid, databaseid) + '/version?from=recovery&sort=[{{"property": "protectionTime", "direction": "DESC"}}]')
+        return self.get(path="instance/%s/database/%s" % (instanceid, databaseid) + '/version?from=recovery&sort=[{"property": "protectionTime", "direction": "DESC"}]')
 
 
 class slaAPI(SppAPI):
@@ -900,8 +900,8 @@ class restoreAPI(SppAPI):
         # return sppAPI(session, 'ngp/application').post(path='?action=restore', data=restore)['response']
         return self.spp_session.post(data=restore, path='ngp/application?action=restore')['response']
 
-    def restore_sql(self, database_href, version_href, version_copy_href, protection_time, database_name,
-                    restore_instance_version, restore_instance_id, database_id, database_restore_name=""):
+    def restore_sql_test(self, database_href, version_href, version_copy_href, protection_time, database_name,
+                         restore_instance_version, restore_instance_id, database_id, database_restore_name=""):
         restore = {
                   "subType": "sql",
                   "script": {
@@ -943,6 +943,71 @@ class restoreAPI(SppAPI):
                             "paths": [{
                               "source": "C:\\Program Files\\Microsoft SQL Server\\MSSQL12.MSSQLSERVER\\MSSQL\\DATA",
                               "destination": ""
+                            }]
+                          }
+                        },
+                        "targetLocation": "original"
+                      },
+                      "option": {
+                        "autocleanup": True,
+                        "allowsessoverwrite": True,
+                        "continueonerror": True,
+                        "applicationOption": {
+                          "overwriteExistingDb": False,
+                          "recoveryType": "recovery"
+                        }
+                      },
+                      "source": None
+                    }],
+                    "view": "applicationview"
+                  }
+                }
+
+        return self.spp_session.post(data=restore, path='ngp/application?action=restore')['response']
+
+    def restore_sql_production(self, database_href, version_href, version_copy_href, protection_time, database_name,
+                         restore_instance_version, restore_instance_id, database_id, destination_path, database_restore_name=""):
+        restore = {
+                  "subType": "sql",
+                  "script": {
+                    "preGuest": None,
+                    "postGuest": None,
+                    "continueScriptsOnError": False
+                  },
+                  "spec": {
+                    "source": [{
+                      "href": database_href,
+                      "resourceType": "database",
+                      "include": True,
+                      "version": {
+                        "href": version_href,
+                        "copy": {
+                          "href": version_copy_href
+                        },
+                        "metadata": {
+                          "useLatest": False,
+                          "protectionTime": protection_time
+                        }
+                      },
+                      "metadata": {
+                        "name": database_name,
+                        "osType": "windows",
+                        "instanceVersion": restore_instance_version,
+                        "instanceId": restore_instance_id,
+                        "useLatest": False
+                      },
+                      "id": database_id
+                    }],
+                    "subpolicy": [{
+                      "type": "restore",
+                      "mode": "production",
+                      "destination": {
+                        "mapdatabase": {
+                          database_href: {
+                            "name": database_restore_name,
+                            "paths": [{
+                              "source": "C:\\Program Files\\Microsoft SQL Server\\MSSQL12.MSSQLSERVER\\MSSQL\\DATA",
+                              "destination": destination_path
                             }]
                           }
                         },
