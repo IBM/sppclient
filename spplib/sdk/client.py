@@ -611,6 +611,41 @@ class OracleAPI(SppAPI):
     def get_database_copy_versions(self, instanceid, databaseid):
         return self.get(path="oraclehome/%s/database/%s" % (instanceid, databaseid) + "/version")
 
+    def apply_options(
+        self, resource_href, database_id, metadataPath, activation_time
+    ):
+
+        applyoptionsdata = {
+            "resources": [
+                {
+                    "href": resource_href,
+                    "id": database_id,
+                    "metadataPath": metadataPath
+                }
+            ],
+            "subtype": "oracle",
+            "options": {
+                "maxParallelStreams": 1,
+                "dbFilesForParallelStreams": "SINGLE_FILE",
+                "backupPreferredNode": "",
+                "logbackup": {
+                    "purgePrimaryLogs": False,
+                    "primaryLogRetentionDays": 3,
+                    "performlogbackup": True,
+                    "rpo": {
+                        "frequency": 5,
+                        "frequencyType": "MINUTE",
+                        "triggerTime": "1:00:00 AM",
+                        "metadata": {
+                            "activateDate": activation_time
+                        }
+                    }
+                }
+            }
+        }
+        print(applyoptionsdata)
+        return self.spp_session.post(data=applyoptionsdata, path='ngp/application?action=applyOptions')
+
 
 class VmwareAPI(SppAPI):
     def __init__(self, spp_session):
@@ -755,6 +790,7 @@ class SqlAPI(SppAPI):
         }
 
         return self.spp_session.post(data=applyoptionsdata, path='ngp/application?action=applyOptions')
+
 
 class slaAPI(SppAPI):
     def __init__(self, spp_session):
@@ -1064,7 +1100,7 @@ class restoreAPI(SppAPI):
 
     def restore_oracle(self, database_href, version_href, version_copy_href, protection_time,
                        database_name, restore_instance_version, restore_instance_id, database_id,
-                       database_restore_name):
+                       database_restore_name, restore_mode='test', database_paths=[]):
         restore = {
             "subType": "oracle",
             "script": {
@@ -1097,12 +1133,12 @@ class restoreAPI(SppAPI):
                 }],
                 "subpolicy": [{
                     "type": "restore",
-                    "mode": "test",
+                    "mode": restore_mode,
                     "destination": {
                         "mapdatabase": {
                             database_href: {
                                 "name": database_restore_name,
-                                "paths": []
+                                "paths": database_paths
                             }
                         },
                         "targetLocation": "original"
