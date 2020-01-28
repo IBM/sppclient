@@ -723,7 +723,7 @@ class SqlAPI(SppAPI):
     def get_database_copy_versions(self, instanceid, databaseid):
         return self.get(path="instance/%s/database/%s" % (instanceid, databaseid) + '/version?from=recovery&sort=[{"property": "protectionTime", "direction": "DESC"}]')
 
-    def apply_options(self, resource_href, db_id, metadataPath):
+    def apply_options_log_backup(self, resource_href, db_id, metadataPath):
 
         applyoptionsdata = {
             "resources": [
@@ -1059,6 +1059,58 @@ class restoreAPI(SppAPI):
                     "view": "applicationview"
                   }
                 }
+
+        return self.spp_session.post(data=restore, path='ngp/application?action=restore')['response']
+
+    def restore_sql_instant_access(self, database_href, version_href, version_copy_href, protection_time, database_name,
+                         restore_instance_version, restore_instance_id, database_id):
+        restore = {
+                  "subType": "sql",
+                  "script": {
+                    "preGuest": None,
+                    "postGuest": None,
+                    "continueScriptsOnError": False
+                  },
+                  "spec": {
+                    "source": [{
+                      "href": database_href,
+                      "resourceType": "database",
+                      "include": True,
+                      "version": {
+                        "href": version_href,
+                        "copy": {
+                          "href": version_copy_href
+                        },
+                        "metadata": {
+                          "useLatest": False,
+                          "protectionTime": protection_time
+                        }
+                      },
+                      "metadata": {
+                        "name": database_name,
+                        "osType": "windows",
+                        "instanceVersion": restore_instance_version,
+                        "instanceId": restore_instance_id,
+                        "useLatest": False
+                      },
+                      "id": database_id
+                    }],
+                    "subpolicy": [{
+                      "type": "IA",
+                      "mode": "IA",
+                      "destination": {
+                        "targetLocation": "original"
+                      },
+                      "option": {
+                        "autocleanup": True,
+                        "allowsessoverwrite": True,
+                        "continueonerror": True,
+                      },
+                      "source": None
+                    }],
+                    "view": "applicationview"
+                  }
+        }
 
         return self.spp_session.post(data=restore, path='ngp/application?action=restore')['response']
 
