@@ -592,7 +592,7 @@ class OracleAPI(SppAPI):
                 return inst
 
     def get_databases_in_instance(self, instanceid):
-        return self.get(path="instance/%s/database?from=recovery" % instanceid)
+        return self.get(path="instance/%s/database?from=hlo" % instanceid)
 
     def get_database_by_name(self, databases, db_name):
         for db in databases:
