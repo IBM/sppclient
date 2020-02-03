@@ -592,7 +592,7 @@ class OracleAPI(SppAPI):
                 return inst
 
     def get_databases_in_instance(self, instanceid):
-        return self.get(path="instance/%s/database?from=recovery" % instanceid)
+        return self.get(path="instance/%s/database?from=hlo" % instanceid)
 
     def get_database_by_name(self, databases, db_name):
         for db in databases:
@@ -610,6 +610,41 @@ class OracleAPI(SppAPI):
 
     def get_database_copy_versions(self, instanceid, databaseid):
         return self.get(path="oraclehome/%s/database/%s" % (instanceid, databaseid) + "/version")
+
+    def apply_options(
+        self, resource_href, database_id, metadataPath, activation_time
+    ):
+
+        applyoptionsdata = {
+            "resources": [
+                {
+                    "href": resource_href,
+                    "id": database_id,
+                    "metadataPath": metadataPath
+                }
+            ],
+            "subtype": "oracle",
+            "options": {
+                "maxParallelStreams": 1,
+                "dbFilesForParallelStreams": "SINGLE_FILE",
+                "backupPreferredNode": "",
+                "logbackup": {
+                    "purgePrimaryLogs": False,
+                    "primaryLogRetentionDays": 3,
+                    "performlogbackup": True,
+                    "rpo": {
+                        "frequency": 5,
+                        "frequencyType": "MINUTE",
+                        "triggerTime": "6:00:00 AM",
+                        "metadata": {
+                            "activateDate": activation_time
+                        }
+                    }
+                }
+            }
+        }
+        print(applyoptionsdata)
+        return self.spp_session.post(data=applyoptionsdata, path='ngp/application?action=applyOptions')
 
 
 class VmwareAPI(SppAPI):
@@ -755,6 +790,7 @@ class SqlAPI(SppAPI):
         }
 
         return self.spp_session.post(data=applyoptionsdata, path='ngp/application?action=applyOptions')
+
 
 class slaAPI(SppAPI):
     def __init__(self, spp_session):
@@ -1133,7 +1169,7 @@ class restoreAPI(SppAPI):
 
     def restore_oracle(self, database_href, version_href, version_copy_href, protection_time,
                        database_name, restore_instance_version, restore_instance_id, database_id,
-                       database_restore_name):
+                       database_restore_name, restore_mode='test', database_paths=[]):
         restore = {
             "subType": "oracle",
             "script": {
@@ -1166,12 +1202,12 @@ class restoreAPI(SppAPI):
                 }],
                 "subpolicy": [{
                     "type": "restore",
-                    "mode": "test",
+                    "mode": restore_mode,
                     "destination": {
                         "mapdatabase": {
                             database_href: {
                                 "name": database_restore_name,
-                                "paths": []
+                                "paths": database_paths
                             }
                         },
                         "targetLocation": "original"
@@ -1192,7 +1228,57 @@ class restoreAPI(SppAPI):
             }
         }
 
-        print(restore)
+        return self.spp_session.post(data=restore, path='ngp/application?action=restore')['response']
+
+    def restore_instant_accesss_oracle(self, database_href, version_href, version_copy_href, protection_time,
+                       database_name, restore_instance_version, restore_instance_id, database_id):
+        restore = {
+            "subType": "oracle",
+            "script": {
+                "preGuest": None,
+                "postGuest": None,
+                "continueScriptsOnError": False
+            },
+            "spec": {
+                "source": [{
+                    "href": database_href,
+                    "resourceType": "database",
+                    "include": True,
+                    "version": {
+                        "href": version_href,
+                        "copy": {
+                            "href": version_copy_href
+                        },
+                        "metadata": {
+                            "useLatest": False,
+                            "protectionTime": protection_time
+                        }
+                    },
+                    "metadata": {
+                        "name": database_name,
+                        "instanceVersion": restore_instance_version,
+                        "instanceId": restore_instance_id,
+                        "useLatest": False
+                    },
+                    "id": database_id
+                }],
+                "subpolicy": [{
+                    "type": "IA",
+                    "mode": "IA",
+                    "destination": {
+                        "targetLocation": "original"
+                    },
+                    "option": {
+                        "autocleanup": True,
+                        "allowsessoverwrite": True,
+                        "continueonerror": True,
+                    },
+                    "source": None
+                }],
+                "view": "applicationview"
+            }
+        }
+
         return self.spp_session.post(data=restore, path='ngp/application?action=restore')['response']
 
     def restore_vm_clone(self, subType, vm_href, vm_name, vm_id, vm_version, vm_clone_name):
