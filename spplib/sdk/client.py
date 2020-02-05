@@ -1928,9 +1928,9 @@ class vadpAPI(SppAPI):
         response = self.post(
             path='?action=installandregister',
             data=data
-        )
+        )['response']
 
-        return response['response']
+        return response
 
     def suspend_vadp(self, vadp_id):
 
@@ -1966,6 +1966,22 @@ class vsnapAPI(SppAPI):
 
         return response
 
+    def register_vsnap(self, session, data):
+        # register vsnap
+        vsnap_response = SppAPI(session, 'ngp/storage').post(data=data)['response']
+        
+        # check if vsnap is ready
+        if vsnap_response['initializeStatus'] != "Ready":
+            self.initialize_vsnap(
+                vsnap_response['storageId']
+            )
+        
+        # refresh vsnap due to bug jira-11403
+        status = self.refresh_vsnap(vsnap_response['storageId'])
+        print(status)
+
+        return vsnap_response
+
     def initialize_vsnap(self, vsnap_id):
         response = self.post(
             path="/{0}/management?action=init".format(vsnap_id),
@@ -1973,10 +1989,16 @@ class vsnapAPI(SppAPI):
         )
         for i in range(30):
             time.sleep(30)
-            status = self.post(
-                path="{0}/?action=refresh".format(vsnap_id))['initializeStatus']
+            status = self.refresh_vsnap(vsnap_id)['initializeStatus']
             if status != "Initializing":
                 break
         if status != "Ready":
             raise Exception("Initialization failed")
+
         return response
+    
+    def refresh_vsnap(self, vsnap_id):
+        status = self.post(
+            path="{0}?action=refresh".format(vsnap_id)
+        )
+        return status
