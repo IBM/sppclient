@@ -925,6 +925,15 @@ class ScriptAPI(SppAPI):
                              data=data, files=files, verify=False)
         return resp
 
+    def remove_script(self, script_id):
+        headers = {
+            'X-Endeavour-sessionid': self.spp_session.sessionid, 'Accept': '*/*'}
+        url = build_url(self.spp_session.api_url, 'api/script/')
+        url = url + script_id
+        resp = requests.delete(url, headers=headers, verify=False)
+
+        return resp
+
 
 class restoreAPI(SppAPI):
     def __init__(self, spp_session):
@@ -969,12 +978,12 @@ class restoreAPI(SppAPI):
         return self.spp_session.post(data=restore, path='ngp/application?action=restore')['response']
 
     def restore_sql_test(self, database_href, version_href, version_copy_href, protection_time, database_name,
-                         restore_instance_version, restore_instance_id, database_id, database_restore_name=""):
+                         restore_instance_version, restore_instance_id, database_id, database_restore_name="", post_guest=None):
         restore = {
                   "subType": "sql",
                   "script": {
                     "preGuest": None,
-                    "postGuest": None,
+                    "postGuest": post_guest,
                     "continueScriptsOnError": False
                   },
                   "spec": {
@@ -1034,67 +1043,75 @@ class restoreAPI(SppAPI):
         return self.spp_session.post(data=restore, path='ngp/application?action=restore')['response']
 
     def restore_sql_production(self, database_href, version_href, version_copy_href, protection_time, database_name,
-                         restore_instance_version, restore_instance_id, database_id, destination_path, database_restore_name=""):
+                         restore_instance_version, restore_instance_id, database_id, destination_path1, destination_path2, database_restore_name="", post_guest=None):
+
         restore = {
-                  "subType": "sql",
-                  "script": {
-                    "preGuest": None,
-                    "postGuest": None,
-                    "continueScriptsOnError": False
-                  },
-                  "spec": {
-                    "source": [{
-                      "href": database_href,
-                      "resourceType": "database",
-                      "include": True,
-                      "version": {
+            "subType": "sql",
+            "script": {
+                "preGuest": None,
+                "postGuest": post_guest,
+                "continueScriptsOnError": False
+            },
+            "spec": {
+                "source": [{
+                    "href": database_href,
+                    "resourceType": "database",
+                    "include": True,
+                    "version": {
                         "href": version_href,
                         "copy": {
-                          "href": version_copy_href
+                            "href": version_copy_href
                         },
                         "metadata": {
-                          "useLatest": False,
-                          "protectionTime": protection_time
+                            "useLatest": False,
+                            "protectionTime": protection_time
                         }
-                      },
-                      "metadata": {
+                    },
+                    "metadata": {
                         "name": database_name,
                         "osType": "windows",
                         "instanceVersion": restore_instance_version,
                         "instanceId": restore_instance_id,
                         "useLatest": False
-                      },
-                      "id": database_id
-                    }],
-                    "subpolicy": [{
-                      "type": "restore",
-                      "mode": "production",
-                      "destination": {
+                    },
+                    "id": database_id
+                }],
+                "subpolicy": [{
+                    "type": "restore",
+                    "mode": "production",
+                    "destination": {
                         "mapdatabase": {
-                          database_href: {
-                            "name": database_restore_name,
-                            "paths": [{
-                              "source": "C:\\Program Files\\Microsoft SQL Server\\MSSQL12.MSSQLSERVER\\MSSQL\\DATA",
-                              "destination": destination_path
-                            }]
-                          }
+                            database_href: {
+                                "name": database_restore_name,
+                                "paths": [
+                                    {
+                                        "source": "A:\\Program Files\\Microsoft SQL Server\\MSSQL13.MSSQLSERVER\\MSSQL\\Data",
+                                        "destination": destination_path1
+                                    },
+                                    {
+                                        "source": "L:\\Program Files\\Microsoft SQL Server\\MSSQL13.MSSQLSERVER\\MSSQL\\Logs",
+                                        "destination": destination_path2
+                                    }
+                                ]
+                            }
                         },
                         "targetLocation": "original"
-                      },
-                      "option": {
+                    },
+                    "option": {
                         "autocleanup": True,
                         "allowsessoverwrite": True,
                         "continueonerror": True,
                         "applicationOption": {
-                          "overwriteExistingDb": False,
-                          "recoveryType": "recovery"
+                            "overwriteExistingDb": False,
+                            "recoveryType": "recovery",
+                            "maxParallelStreams": 1
                         }
-                      },
-                      "source": None
-                    }],
-                    "view": "applicationview"
-                  }
-                }
+                    },
+                    "source": None
+                }],
+                "view": "applicationview"
+            }
+        }
 
         return self.spp_session.post(data=restore, path='ngp/application?action=restore')['response']
 
