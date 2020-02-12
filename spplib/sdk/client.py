@@ -353,6 +353,18 @@ class JobSessionAPI(SppAPI):
 
         return jobsession
 
+    def expire_job_session(self, job_session_id):
+        import datetime
+
+        # Use yesterday (local system time) as expiry date to make the jobsession expired.
+        yesterday = datetime.datetime.now() - datetime.timedelta(days=1)
+        timestamp = int(round(yesterday.timestamp() * 1000))
+
+        response = self.spp_session.post(
+            path='api/endeavour/jobsession/{}?action=expire'.format(job_session_id)
+        )
+
+        return response
 
 class DiagAPI(SppAPI):
     def __init__(self, spp_session):
@@ -2019,3 +2031,59 @@ class vsnapAPI(SppAPI):
             path="{0}?action=refresh".format(vsnap_id)
         )
         return status
+
+class MongoAPI:
+    def __init__(self, ssh_username, ssh_password, ssh_address):
+        self.ssh_username = ssh_username
+        self.ssh_password = ssh_password
+        self.ssh_address = ssh_address
+
+    """
+    This is implemented as a context manager to ensure the SSHTunnelForwarder server is closed after
+    we're done using the class. Otherwise the program would just hang indefinitely. 
+
+    Example:
+
+    with MongoAPI('serveradmin', 'password', '172.20.79.0').connect() as conn:
+        print(conn.db.recovery_StorageCatalogStorage.find_one())
+    """
+    from contextlib import contextmanager
+    @contextmanager
+    def connect(self, mongo_user='ecxadmin', mongo_password='Ecx8dmin', port=27018, auth_database="ECDB_master"):
+        # Handling imports here to avoid requiring these for users not interested in mongo functionality.
+        import pymongo
+        from sshtunnel import SSHTunnelForwarder
+        
+        # We're using an SSH forwarder because mongoDB on SPP products doesn't allow remote connections.
+        server = SSHTunnelForwarder(
+            self.ssh_address,
+            ssh_username=self.ssh_username,
+            ssh_password=self.ssh_password,
+            remote_bind_address=('127.0.0.1', port)
+        )
+        server.daemon_forward_servers = True
+        server.start()
+
+        client = pymongo.MongoClient('127.0.0.1', server.local_bind_port)
+        self.client = client
+
+        db = client[auth_database]
+        db.authenticate(mongo_user, mongo_password)
+        self.db = db
+
+        try:
+            yield self
+        finally:
+            server.close()
+        
+if __name__ == "__main__":
+
+    mongo_api = MongoAPI('serveradmin', 'Sppc@t123!@#123', '172.20.79.63')
+    with mongo_api.connect(port=27018) as conn:
+        snapshot = conn.db.recovery_StorageCatalogSnapshot.find_one()
+        print(snapshot)
+
+    # job_id = snapshot['jobId']
+    # session_id = snapshot['sessionId']
+
+    # print(JobSessionAPI(SppSession('https://172.20.79.63', 'isppadmin', 'sppc@t123!')).expire_job_session(session_id))
