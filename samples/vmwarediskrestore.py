@@ -54,6 +54,18 @@ def get_source_disk_info(vm):
 def get_source_disk_version(disk):
     return None
 
+def build_target_info(targetvm):
+    target = {}
+    if 'cluster' in targetvm:
+        target['name'] = targetvm['cluster']['name']
+        target['resouruceType'] = "cluster"
+        target['href'] = options.host + "/api/hypervisor/" + targetvm['hypervisorKey'] + "/cluster/" + targetvm['cluster']['key'] + "?from=hlo"
+    else:
+        target['name'] = targetvm['hypervisorHostname']
+        target['resourceType'] = "host"
+        target['href'] = options.host + "/api/hypervisor/" + targetvm['hypervisorKey'] + "/host/" + targetvm['hypervisorHostKey'] + "?from=hlo"
+    return target
+
 def build_restore_request(sourcevm, targetvm, disk, diskversion):
     restore = {}
     restore['subType'] = "vmware"
@@ -74,10 +86,7 @@ def build_restore_request(sourcevm, targetvm, disk, diskversion):
     subpolicy['type'] = "IA"
     subpolicy['source'] = None
     subpolicy['destination'] = {}
-    subpolicy['destination']['target'] = {}
-    subpolicy['destination']['target']['name'] = targetvm['hypervisorHostname']
-    subpolicy['destination']['target']['resourceType'] = "host"
-    subpolicy['destination']['target']['href'] = options.host + "/api/hypervisor/" + targetvm['hypervisorKey'] + "/host/" + targetvm['hypervisorHostKey'] + "?from=hlo"
+    subpolicy['destination']['target'] = build_target_info(targetvm)
     subpolicy['destination']['mapvdisk'] = {}
     subpolicy['destination']['mapvdisk'][disk['links']['self']['href']] = {}
     subpolicy['destination']['mapvdisk'][disk['links']['self']['href']]['target'] = {"href": targetvm['links']['self']['href']}
