@@ -2076,14 +2076,3 @@ class MongoAPI:
         finally:
             server.close()
         
-if __name__ == "__main__":
-
-    mongo_api = MongoAPI('serveradmin', 'Sppc@t123!@#123', '172.20.79.63')
-    with mongo_api.connect(port=27018) as conn:
-        snapshot = conn.db.recovery_StorageCatalogSnapshot.find_one()
-        print(snapshot)
-
-    # job_id = snapshot['jobId']
-    # session_id = snapshot['sessionId']
-
-    # print(JobSessionAPI(SppSession('https://172.20.79.63', 'isppadmin', 'sppc@t123!')).expire_job_session(session_id))
