@@ -16,6 +16,8 @@ parser.add_option("--host", dest="host", help="SPP Host, (ex. https://172.20.49.
 parser.add_option("--vm", dest="vm", help="Source VM Name")
 parser.add_option("--disk", dest="disk", help="Source Disk Name")
 parser.add_option("--target", dest="target", help="Target VM Name")
+parser.add_option("--start", dest="start", help="Start date (d/m/y) for selecting restore version")
+parser.add_option("--end", dest="end", help="End date (d/m/y) for selecting restore version")
 (options, args) = parser.parse_args()
 
 def prettyprint(indata):
@@ -52,7 +54,23 @@ def get_source_disk_info(vm):
     sys.exit(4)
 
 def get_source_disk_version(disk):
-    return None
+    start = int(datetime.datetime.strptime(options.start, '%d/%m/%y').strftime("%s"))*1000
+    end = int(datetime.datetime.strptime(options.end, '%d/%m/%y').strftime("%s"))*1000
+    copies = client.SppAPI(session, 'spphv').get(url=disk['links']['copies']['href'])['copies']
+    for copy in copies:
+        prottime = int(copy['protectionInfo']['protectionTime'])
+        if (start < prottime and prottime < end):
+            version = {}
+            version['href'] = copy['links']['version']['href']
+            version['copy'] = {}
+            version['copy']['href'] = copy['links']['self']['href']
+            version['metadata'] = {}
+            version['metadata']['useLatest'] = False
+            version['metadata']['protectionTime'] = prottime
+            return version
+    logger.warning("No versions found in date range for this disk.")
+    session.logout()
+    sys.exit(3)
 
 def build_target_info(targetvm):
     target = {}
@@ -66,7 +84,7 @@ def build_target_info(targetvm):
         target['href'] = options.host + "/api/hypervisor/" + targetvm['hypervisorKey'] + "/host/" + targetvm['hypervisorHostKey'] + "?from=hlo"
     return target
 
-def build_restore_request(sourcevm, targetvm, disk, diskversion):
+def build_restore_request(sourcevm, targetvm, disk):
     restore = {}
     restore['subType'] = "vmware"
     restore['script'] = {"preGuest": None, "postGuest": None, "continueScriptsOnError": False}
@@ -80,9 +98,12 @@ def build_restore_request(sourcevm, targetvm, disk, diskversion):
     source['resourceType'] = "vdisk"
     source['id'] = disk['id']
     source['include'] = True
-    source['version'] = {}
-    source['version']['href'] = disk['links']['latestversion']['href']
-    source['version']['metadata'] = {'useLatest':True,'name':"Use Latest"}
+    if(options.start is not None and options.end is not None):
+        source['version'] = get_source_disk_version(disk)
+    else:
+        source['version'] = {}
+        source['version']['href'] = disk['links']['latestversion']['href']
+        source['version']['metadata'] = {'useLatest':True,'name':"Use Latest"}
     subpolicy['type'] = "IA"
     subpolicy['source'] = None
     subpolicy['destination'] = {}
@@ -111,8 +132,7 @@ def restore_disk():
     sourcevm = get_vm_info(options.vm, "recovery")
     targetvm = get_vm_info(options.target, "hlo")
     disk = get_source_disk_info(sourcevm)
-    diskversion = get_source_disk_version(disk)
-    restore = build_restore_request(sourcevm, targetvm, disk, diskversion)
+    restore = build_restore_request(sourcevm, targetvm, disk)
     resp = client.SppAPI(session, 'spphv').post(path='?action=restore', data=restore)
     if resp['statusCode'] == 201:
         logger.info("Restore job " + resp['response']['name'] + " created and started")
