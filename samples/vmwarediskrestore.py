@@ -58,7 +58,7 @@ def build_target_info(targetvm):
     target = {}
     if 'cluster' in targetvm:
         target['name'] = targetvm['cluster']['name']
-        target['resouruceType'] = "cluster"
+        target['resourceType'] = "cluster"
         target['href'] = options.host + "/api/hypervisor/" + targetvm['hypervisorKey'] + "/cluster/" + targetvm['cluster']['key'] + "?from=hlo"
     else:
         target['name'] = targetvm['hypervisorHostname']
