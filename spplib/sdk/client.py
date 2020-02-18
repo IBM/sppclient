@@ -354,15 +354,12 @@ class JobSessionAPI(SppAPI):
         return jobsession
 
     def expire_job_session(self, job_session_id):
-        import datetime
-
-        # Use yesterday (local system time) as expiry date to make the jobsession expired.
-        yesterday = datetime.datetime.now() - datetime.timedelta(days=1)
-        timestamp = int(round(yesterday.timestamp() * 1000))
 
         response = self.spp_session.post(
             path='api/endeavour/jobsession/{}?action=expire'.format(job_session_id)
         )
+
+
 
         return response
 
@@ -1933,6 +1930,10 @@ class catalogAPI(SppAPI):
             time.sleep(10)
 
         raise Exception('Server is taking too long to respond!')
+    
+    # TODO Only return after maintenance is done.
+    def run_maintenance(self):
+        return self.spp_session.post('api/endeavour/job/1001?action=start')
 
 
 class vadpAPI(SppAPI):
@@ -2032,6 +2033,9 @@ class vsnapAPI(SppAPI):
         )
         return status
 
+"""
+Used for communication with the MongoDB database that the SPP application runs on.
+"""
 class MongoAPI:
     def __init__(self, ssh_username, ssh_password, ssh_address):
         self.ssh_username = ssh_username
@@ -2039,13 +2043,16 @@ class MongoAPI:
         self.ssh_address = ssh_address
 
     """
-    This is implemented as a context manager to ensure the SSHTunnelForwarder server is closed after
+    This method is implemented as a context manager to ensure the SSHTunnelForwarder server is closed after
     we're done using the class. Otherwise the program would just hang indefinitely. 
 
     Example:
 
     with MongoAPI('serveradmin', 'password', '172.20.79.0').connect() as conn:
         print(conn.db.recovery_StorageCatalogStorage.find_one())
+
+    It should only be called by end users with the intention of using pymongo directly. Using other methods
+    of this class doesn't require calling connect() as they call it themselves.
     """
     from contextlib import contextmanager
     @contextmanager
@@ -2075,4 +2082,21 @@ class MongoAPI:
             yield self
         finally:
             server.close()
-        
+
+    """
+    Returns all snapshots by default, but can be modified with a standard MongoDB query.
+
+    Examples: 
+        get_snapshots({"pk": "2000.snapshot.4"})
+        get_snapshots({"sessionId": 82137912309})
+    """
+    def get_snapshots(self, query=None):
+
+        with self.connect() as conn:
+            return [snapshot for snapshot in conn.db.recovery_StorageCatalogSnapshot.find(query)]
+
+
+# DEBUG
+if __name__ == "__main__":
+    import pprint
+    pprint.pprint(MongoAPI('serveradmin', 'Sppc@t123!@#123', '172.20.79.64').get_snapshots())
