@@ -2094,9 +2094,3 @@ class MongoAPI:
 
         with self.connect() as conn:
             return [snapshot for snapshot in conn.db.recovery_StorageCatalogSnapshot.find(query)]
-
-
-# DEBUG
-if __name__ == "__main__":
-    import pprint
-    pprint.pprint(MongoAPI('serveradmin', 'Sppc@t123!@#123', '172.20.79.64').get_snapshots())
