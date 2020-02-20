@@ -1859,6 +1859,7 @@ class cloudAPI(SppAPI):
 class catalogAPI(SppAPI):
 
     def __init__(self, spp_session):
+        self.session = spp_session
         super(catalogAPI, self).__init__(spp_session, 'ngp/catalog')
 
     # Assign an SLA for your SPP catalog backup.
@@ -1933,8 +1934,10 @@ class catalogAPI(SppAPI):
     
     # TODO Only return after maintenance is done.
     def run_maintenance(self):
-        return self.spp_session.post('api/endeavour/job/1001?action=start')
-
+        resp = self.spp_session.post('api/endeavour/job/1001?action=start')
+        
+        return JobAPI(self.session).monitor(resp['status'], resp['id'], resp['name'])
+         
 
 class vadpAPI(SppAPI):
     def __init__(self, spp_session):
