@@ -2008,10 +2008,6 @@ class vsnapAPI(SppAPI):
             self.initialize_vsnap(
                 vsnap_response['storageId']
             )
-        
-        # refresh vsnap due to bug jira-11403
-        status = self.refresh_vsnap(vsnap_response['storageId'])
-        print(status)
 
         return vsnap_response
 
