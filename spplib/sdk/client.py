@@ -346,12 +346,12 @@ class JobSessionAPI(SppAPI):
     def __init__(self, spp_session):
         super(JobSessionAPI, self).__init__(spp_session, 'jobsession')
 
-    def get_jobsession(self, jobsessionid):
+    def get_jobsession(self, job_session_id):
 
-        jobsession = self.spp_session.get(
-            path='api/endeavour/jobsession/{}'.format(jobsessionid))
+        job_session = self.spp_session.get(
+            path='api/endeavour/jobsession/{}'.format(job_session_id))
 
-        return jobsession
+        return job_session
 
     def expire_job_session(self, job_session_id):
 
@@ -2097,3 +2097,48 @@ class MongoAPI:
 
         with self.connect() as conn:
             return [snapshot for snapshot in conn.db.recovery_StorageCatalogSnapshot.find(query)]
+
+"""
+API wrapper for Vsnap CLI API.
+Allows for direct communication with a vsnap (not through SPP).
+"""
+class VsnapAPI_CLI:
+    def __init__(self, address, username, password):
+        self.api_address = "https://{}:8900/api/".format(address)
+        self.credentials = (username, password)
+
+    def get_snapshots(self):
+        return requests.get(self.api_address+'snapshot', auth=self.credentials, verify=False).json()
+    
+    def get_snapshot_by_name(self, name):
+        snapshots = self.get_snapshots()['snapshots']
+        for snapshot in snapshots:
+            if snapshot['name'] == name:
+                return snapshot
+
+        return None
+    
+    def delete_snapshot_by_id(self, snapshot_id):
+        return requests.delete(
+            self.api_address+'snapshot/{}'.format(snapshot_id),
+            auth=self.credentials,
+            verify=False
+        )
+
+    def get_volumes(self):
+        return requests.get(self.api_address+'volume', auth=self.credentials, verify=False).json()
+    
+    def get_volume_by_name(self, name):
+        volumes = self.get_volumes()['volumes']
+        for volume in volumes:
+            if volume['name'] == name:
+                return volume
+
+        return None
+    
+    def delete_volume_by_id(self, volume_id):
+        return requests.delete(
+            self.api_address+'volume/{}'.format(volume_id),
+            auth=self.credentials,
+            verify=False
+        )
