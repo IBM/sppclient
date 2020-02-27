@@ -54,8 +54,8 @@ def get_source_disk_info(vm):
     sys.exit(4)
 
 def get_source_disk_version(disk):
-    start = int(datetime.datetime.strptime(options.start, '%d/%m/%y').strftime("%s"))*1000
-    end = int(datetime.datetime.strptime(options.end, '%d/%m/%y').strftime("%s"))*1000
+    start = int(datetime.datetime.strptime(options.start, '%d/%m/%y').timestamp())*1000
+    end = int(datetime.datetime.strptime(options.end, '%d/%m/%y').timestamp())*1000
     copies = client.SppAPI(session, 'spphv').get(url=disk['links']['copies']['href'])['copies']
     for copy in copies:
         prottime = int(copy['protectionInfo']['protectionTime'])

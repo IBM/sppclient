@@ -767,7 +767,7 @@ class SqlAPI(SppAPI):
     def get_database_copy_versions(self, instanceid, databaseid):
         return self.get(path="instance/%s/database/%s" % (instanceid, databaseid) + '/version?from=recovery&sort=[{"property": "protectionTime", "direction": "DESC"}]')
 
-    def apply_options_log_backup(self, resource_href, db_id, metadataPath):
+    def apply_options(self, resource_href, db_id, metadataPath, log_backup):
 
         applyoptionsdata = {
             "resources": [
@@ -782,19 +782,7 @@ class SqlAPI(SppAPI):
                 "maxParallelStreams": 1,
                 "dbFilesForParallelStreams": "SINGLE_FILE",
                 "backupPreferredNode": "",
-                "logbackup": {
-                    "purgePrimaryLogs": False,
-                    "primaryLogRetentionDays": 3,
-                    "performlogbackup": True,
-                    "rpo": {
-                        "frequency": 30,
-                        "frequencyType": "MINUTE",
-                        "triggerTime": "12:00:00 AM",
-                        "metadata": {
-                            "activateDate": 1578870000000
-                        }
-                    }
-                }
+                "logbackup": log_backup
             }
         }
 
@@ -2008,10 +1996,6 @@ class vsnapAPI(SppAPI):
             self.initialize_vsnap(
                 vsnap_response['storageId']
             )
-        
-        # refresh vsnap due to bug jira-11403
-        status = self.refresh_vsnap(vsnap_response['storageId'])
-        print(status)
 
         return vsnap_response
 
