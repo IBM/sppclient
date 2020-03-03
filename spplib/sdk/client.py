@@ -712,6 +712,11 @@ class HypervAPI(SppAPI):
             if hyperv['name'] == name:
                 return hyperv
 
+    def get_hyperv_from_folder(self, hypervs, name):
+        for hyperv in hypervs['contents']:
+            if hyperv['name'] == name:
+                return hyperv
+
     def get_databases_in_instance(self, instanceid):
         return self.get(path="oraclehome/%s/database" % instanceid)
 
