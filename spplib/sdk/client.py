@@ -808,7 +808,7 @@ class slaAPI(SppAPI):
                    "spec": {"simple": True,
                             "subpolicy": [{"type": "REPLICATION",
                                            "software": True, "retention": {"age": 15},
-                                           "trigger": {"frequency": 1, "type": "DAILY", "activateDate": 1524110400000},
+                                           "trigger": {},
                                            "site": site}]}}
         resp = self.post(data=slainfo)
         return resp
