@@ -40,8 +40,8 @@ resource_to_endpoint = {
     'role': 'security/role',
     'identityuser': 'identity/user',
     'identitycredential': 'identity/user',
-    'appserver': 'appserver',
     'oracle': 'api/application/oracle',
+    'file': 'api/application/file',
     'sql': 'api/application/sql',
     'sppsla': 'ngp/slapolicy',
     'site': 'site',
@@ -654,6 +654,53 @@ class OracleAPI(SppAPI):
         }
         print(applyoptionsdata)
         return self.spp_session.post(data=applyoptionsdata, path='ngp/application?action=applyOptions')
+
+
+class FileSystemAPI(SppAPI):
+    def __init__(self, spp_session):
+        super(FileSystemAPI, self).__init__(spp_session, 'file')
+
+    def get_disks_in_instance(self, instanceid):
+        return self.get(path="instance/%s/database?from=hlo" % instanceid)
+
+    def get_disk_by_name(self, disks, disk_name):
+        for d in disks:
+            if d['name'] == disk_name:
+                return d
+
+    def apply_options(self, disk1_info, disk2_info, files_excluded):
+        data = {
+            "resources": [{
+                    "href": disk1_info['links']['self']['href'],
+                    "id": disk1_info['id'],
+                    "metadataPath": disk1_info['metadataPath']
+                },
+                {
+                    "href": disk2_info['links']['self']['href'],
+                    "id": disk2_info['id'],
+                    "metadataPath": disk2_info['metadataPath']
+                }
+            ],
+            "subtype": "file",
+            "options": {
+                "maxParallelStreams": 1,
+                "dbFilesForParallelStreams": "SINGLE_FILE",
+                "backupPreferredNode": "",
+                "agentOptions": {
+                    "exclusions": {
+                        "enableExclusions": True,
+                        "exclusionPaths": [
+                            files_excluded
+                        ]
+                    }
+                },
+                "enableFH": True,
+                "FHExcludedPath": files_excluded,
+                "logbackup": {}
+            }
+        }
+
+        return self.spp_session.post(data=data, path='ngp/application?action=applyOptions')
 
 
 class VmwareAPI(SppAPI):
