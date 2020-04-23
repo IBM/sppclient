@@ -1026,8 +1026,8 @@ class restoreAPI(SppAPI):
         # return sppAPI(session, 'ngp/application').post(path='?action=restore', data=restore)['response']
         return self.spp_session.post(data=restore, path='ngp/application?action=restore')['response']
 
-    def restore_sql_test(self, database_href, version_href, version_copy_href, protection_time, database_name,
-                         restore_instance_version, restore_instance_id, database_id, database_restore_name="", post_guest=None):
+    def restore_sql_test(self, database_href, version_href, version_copy_href, protection_time, database_name, restore_instance_version,
+                         restore_instance_id, database_id, database_restore_name="", post_guest=None, recoveryType='recovery'):
         restore = {
                   "subType": "sql",
                   "script": {
@@ -1080,7 +1080,7 @@ class restoreAPI(SppAPI):
                         "continueonerror": True,
                         "applicationOption": {
                           "overwriteExistingDb": False,
-                          "recoveryType": "recovery"
+                          "recoveryType": recoveryType
                         }
                       },
                       "source": None
