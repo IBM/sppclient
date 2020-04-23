@@ -2072,6 +2072,16 @@ class vsnapAPI(SppAPI):
         )
         return status
 
+    def get_network_adapters(self, vsnap_id):
+        response = self.get("{0}/management/network".format(vsnap_id))
+
+        return response
+
+    def update_network_adapter(self, vsnap_id, adapter_id, data):
+        response = self.put("{0}/management/network/{1}".format(vsnap_id, adapter_id), data=data)
+
+        return response
+
 """
 Used for communication with the MongoDB database that the SPP application runs on.
 """
