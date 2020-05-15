@@ -1895,6 +1895,74 @@ class restoreAPI(SppAPI):
 
         return self.spp_session.post(data=data, path='ngp/hypervisor?action=restore')['response']
 
+    def restore_ec2_clone(self, hyperv_href, hyperv_name, hyperv_id, hyperv_version_href, hyperv_copy_href,
+                          hyperv_copy_time, restore_hyperv_name):
+
+        data = {
+            "subType": "awsec2",
+            "spec": {
+                "source": [
+                    {
+                        "href": hyperv_href,
+                        "metadata": {
+                            "name": hyperv_name
+                        },
+                        "resourceType": "vm",
+                        "id": hyperv_id,
+                        "include": True,
+                        "version": {
+                            "href": hyperv_version_href,
+                            "copy": {
+                                "href": hyperv_copy_href
+                            },
+                            "metadata": {
+                                "useLatest": False,
+                                "protectionTime": hyperv_copy_time
+                            }
+                        }
+                    }
+                ],
+                "subpolicy": [
+                    {
+                        "type": "IV",
+                        "destination": {
+                            "systemDefined": True,
+                            "mapvirtualnetwork": {},
+                            "mapRRPdatastore": {},
+                            "mapsubnet": {},
+                            "mapvm": {
+                                hyperv_href: {
+                                    "name": restore_hyperv_name
+                                }
+                            }
+                        },
+                        "source": None,
+                        "option": {
+                            "poweron": False,
+                            "allowvmoverwrite": False,
+                            "continueonerror": True,
+                            "autocleanup": True,
+                            "allowsessoverwrite": True,
+                            "restorevmtag": True,
+                            "mode": "clone",
+                            "vmscripts": False,
+                            "protocolpriority": "iSCSI",
+                            "IR": False,
+                            "streaming": False
+                        }
+                    }
+                ]
+            },
+            "script": {
+                "preGuest": None,
+                "postGuest": None,
+                "continueScriptsOnError": False
+            }
+        }
+
+        return self.spp_session.post(data=data, path='ngp/hypervisor?action=restore')['response']
+
+
     def getStatus(self, job_id):
         jobsession = self.spp_session.get(
             path='api/endeavour/jobsession?pageSize=200')['sessions']
