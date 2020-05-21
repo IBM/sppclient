@@ -883,6 +883,29 @@ class slaAPI(SppAPI):
         resp = self.post(data=slainfo)
         return resp
 
+    def create_ec2_sla(self, name, snapshot_prefix=""):
+        slainfo = {
+            "name": name,
+            "version": "1.0",
+            "spec": {
+                "simple": True,
+                "subpolicy": [
+                    {
+                        "description": "Storage Snapshot",
+                        "label": snapshot_prefix,
+                        "name": "Storage Snapshot",
+                        "type": "SNAPSHOT",
+                        "retention": {
+                            "age": 15
+                        },
+                        "trigger": {},
+                    }
+                ]
+            }
+        }
+        resp = self.post(data=slainfo)
+        return resp
+
     def edit_sla(self, id, data):
         response = self.put(
             path=id,
@@ -1233,6 +1256,102 @@ class restoreAPI(SppAPI):
         }
 
         return self.spp_session.post(data=restore, path='ngp/application?action=restore')['response']
+
+    def restore_sql_pit_test(self, database_href, database_name, restore_instance_version, restore_instance_id,
+                             database_id, PIT_time, site_href, database_restore_name="", post_guest=None):
+        restore = {
+            "subType": "sql",
+            "script": {
+                "preGuest": None,
+                "postGuest": post_guest,
+                "continueScriptsOnError": False
+
+            },
+            "spec": {
+                "source": [
+                    {
+                        "href": database_href,
+                        "resourceType": "database",
+                        "include": True,
+                        "version": None,
+                        "metadata": {
+                            "name": database_name,
+                            "osType": "windows",
+                            "instanceVersion": restore_instance_version,
+                            "instanceId": restore_instance_id,
+                            "useLatest": True
+
+                        },
+                        "id": database_id,
+                        "pointInTime": PIT_time
+
+                    }
+
+                ],
+                "subpolicy": [
+                    {
+                        "type": "restore",
+                        "mode": "test",
+                        "destination": {
+                            "mapdatabase": {
+                                database_href: {
+                                    "name": database_restore_name,
+                                    "paths": [
+                                        {
+                                            "source": "A:\\Program Files\\Microsoft SQL Server\\MSSQL13.MSSQLSERVER\\MSSQL\\Data",
+                                            "destination": "",
+                                            "mountPoint": "a:",
+                                            "fileType": "DATA"
+
+                                        },
+                                        {
+                                            "source": "L:\\Program Files\\Microsoft SQL Server\\MSSQL13.MSSQLSERVER\\MSSQL\\Logs",
+                                            "destination": "",
+                                            "mountPoint": "l:",
+                                            "fileType": "LOGS"
+
+                                        }
+
+                                    ]
+
+                                }
+
+                            },
+                            "targetLocation": "original"
+
+                        },
+                        "option": {
+                            "autocleanup": True,
+                            "allowsessoverwrite": True,
+                            "continueonerror": True,
+                            "applicationOption": {
+                                "overwriteExistingDb": False,
+                                "recoveryType": "pitrecovery"
+
+                            }
+
+                        },
+                        "source": {
+                            "copy": {
+                                "site": {
+                                    "href": site_href
+
+                                }
+
+                            }
+
+                        }
+
+                    }
+
+                ],
+                "view": "applicationview"
+
+            }
+        }
+
+        return self.spp_session.post(data=restore, path='ngp/application?action=restore')['response']
+
 
     def restore_oracle(self, database_href, version_href, version_copy_href, protection_time,
                        database_name, restore_instance_version, restore_instance_id, database_id,
@@ -1841,6 +1960,74 @@ class restoreAPI(SppAPI):
 
         return self.spp_session.post(data=data, path='ngp/hypervisor?action=restore')['response']
 
+    def restore_ec2_clone(self, hyperv_href, hyperv_name, hyperv_id, hyperv_version_href, hyperv_copy_href,
+                          hyperv_copy_time, restore_hyperv_name):
+
+        data = {
+            "subType": "awsec2",
+            "spec": {
+                "source": [
+                    {
+                        "href": hyperv_href,
+                        "metadata": {
+                            "name": hyperv_name
+                        },
+                        "resourceType": "vm",
+                        "id": hyperv_id,
+                        "include": True,
+                        "version": {
+                            "href": hyperv_version_href,
+                            "copy": {
+                                "href": hyperv_copy_href
+                            },
+                            "metadata": {
+                                "useLatest": False,
+                                "protectionTime": hyperv_copy_time
+                            }
+                        }
+                    }
+                ],
+                "subpolicy": [
+                    {
+                        "type": "IV",
+                        "destination": {
+                            "systemDefined": True,
+                            "mapvirtualnetwork": {},
+                            "mapRRPdatastore": {},
+                            "mapsubnet": {},
+                            "mapvm": {
+                                hyperv_href: {
+                                    "name": restore_hyperv_name
+                                }
+                            }
+                        },
+                        "source": None,
+                        "option": {
+                            "poweron": False,
+                            "allowvmoverwrite": False,
+                            "continueonerror": True,
+                            "autocleanup": True,
+                            "allowsessoverwrite": True,
+                            "restorevmtag": True,
+                            "mode": "clone",
+                            "vmscripts": False,
+                            "protocolpriority": "iSCSI",
+                            "IR": False,
+                            "streaming": False
+                        }
+                    }
+                ]
+            },
+            "script": {
+                "preGuest": None,
+                "postGuest": None,
+                "continueScriptsOnError": False
+            }
+        }
+
+        return self.spp_session.post(data=data, path='ngp/hypervisor?action=restore')['response']
+
+
     def getStatus(self, job_id):
         jobsession = self.spp_session.get(
             path='api/endeavour/jobsession?pageSize=200')['sessions']
@@ -1912,6 +2099,20 @@ class cloudAPI(SppAPI):
         cloud_server = self.spp_session.post(
             data=data, path='ngp/cloud')['response']
         return cloud_server
+
+    def register_ec2_cloud(self, cloud_data):
+        data = {
+            "type": cloud_data['type'],
+            "provider": cloud_data['provider'],
+            "accesskey": cloud_data['accesskey'],
+            "name": cloud_data['name']
+        }
+        cloud_server = self.spp_session.post(data=data, path='ngp/cloud')['response']
+        return cloud_server
+
+    def unregister_cloud(self, cloud_id):
+        response = self.spp_session.delete(path='api/cloud/{0}'.format(cloud_id))
+        return response
 
 
 class catalogAPI(SppAPI):
