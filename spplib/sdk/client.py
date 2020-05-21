@@ -442,7 +442,7 @@ class JobAPI(SppAPI):
 
         return resp['logs']
 
-    def monitor(self, jobStatus, job_id, job_name, timeout=0):
+    def monitor(self, jobStatus, job_id, job_name, timeout=0, number_of_jobs = None):
         jobIsActive = False
         current_time = time.time()
 
@@ -473,31 +473,41 @@ class JobAPI(SppAPI):
                     raise Exception(
                         'Job exceeded maximum time limit and hence job is cancelling')
 
-        sessionId = self.getjob(job_name)['lastrun']['sessionId']
+        if number_of_jobs:
+            job = self.getjob(job_name)
+            job_sessions = self.spp_session.get(
+                path='api/endeavour/jobsession?filter=[{"property":"jobId","value":' + job['id'] + ',"op":"="}]&sort=[{"property":"start","direction":"ASC"}]'
+            )['sessions'][:number_of_jobs]
+            print(job_sessions)
+            sessionStatus = 'COMPLETED'
+            for j in job_sessions:
+                if j['status'] in ['PARTIAL', 'FAILED']:
+                    sessionStatus = j['status']
+        else:
+            sessionId = self.getjob(job_name)['lastrun']['sessionId']
+            sessionStatus = self.spp_session.get(
+                path='api/endeavour/jobsession/' + sessionId)['status']
 
-        sessionStatus = self.spp_session.get(
-            path='api/endeavour/jobsession/' + sessionId)['status']
+            # downloading job log if status is PARTIAL or FAILED
+            try:
 
-        # downloading job log if status is PARTIAL or FAILED
-        try:
+                if sessionStatus in ['PARTIAL', 'FAILED']:
+                    diagapi = DiagAPI(spp_session=self.spp_session)
+                    jobsessapi = JobSessionAPI(spp_session=self.spp_session)
+                    jobsession = jobsessapi.get_jobsession(sessionId)
+                    diag_href = jobsession['links']['diagnostics']['href']
 
-            if sessionStatus in ['PARTIAL', 'FAILED']:
-                diagapi = DiagAPI(spp_session=self.spp_session)
-                jobsessapi = JobSessionAPI(spp_session=self.spp_session)
-                jobsession = jobsessapi.get_jobsession(sessionId)
-                diag_href = jobsession['links']['diagnostics']['href']
-
-                outfile = diagapi.get_joblogs(
-                    url=diag_href, outfile="joblog_{}.zip".format(sessionId))
-                logging.info(
-                    "Job log has been downloaded file name is : {} ".format(outfile))
-                logging.info("Uploading log file to Prolog server")
-                upload_url, rc = system.run_shell_command(
-                    "vsdiag upload {}".format(outfile))
-                logging.info(
-                    "Download and Upload compelete, the url is :{}".format(rc))
-        except:
-            traceback.print_exc()
+                    outfile = diagapi.get_joblogs(
+                        url=diag_href, outfile="joblog_{}.zip".format(sessionId))
+                    logging.info(
+                        "Job log has been downloaded file name is : {} ".format(outfile))
+                    logging.info("Uploading log file to Prolog server")
+                    upload_url, rc = system.run_shell_command(
+                        "vsdiag upload {}".format(outfile))
+                    logging.info(
+                        "Download and Upload compelete, the url is :{}".format(rc))
+            except:
+                traceback.print_exc()
 
         return jobStatus, sessionStatus
 
@@ -745,6 +755,14 @@ class VmwareAPI(SppAPI):
         }
 
         return self.spp_session.post(data=applyoptionsdata, path='ngp/hypervisor?action=applyOptions')
+
+    def adhoc_backup(self, sla_name, resources):
+        data = {
+            "slaPolicyName": sla_name,
+            "subtype": "vmware",
+            "resource": resources
+        }
+        return self.spp_session.post(data=data, path='ngp/hypervisor?action=adhoc')
 
 
 class HypervAPI(SppAPI):
