@@ -478,7 +478,6 @@ class JobAPI(SppAPI):
             job_sessions = self.spp_session.get(
                 path='api/endeavour/jobsession?filter=[{"property":"jobId","value":' + job['id'] + ',"op":"="}]&sort=[{"property":"start","direction":"ASC"}]'
             )['sessions'][:number_of_jobs]
-            print(job_sessions)
             sessionStatus = 'COMPLETED'
             for j in job_sessions:
                 if j['status'] in ['PARTIAL', 'FAILED']:
@@ -812,6 +811,15 @@ class HypervAPI(SppAPI):
         }
 
         return self.spp_session.post(data=applyoptionsdata, path='ngp/hypervisor?action=applyOptions')
+
+    def adhoc_backup(self, sla_name, resources):
+        data = {
+            "slaPolicyName": sla_name,
+            "subtype": "hyperv",
+            "resource": resources
+        }
+        print(data)
+        return self.spp_session.post(data=data, path='ngp/hypervisor?action=adhoc')
 
 
 class SqlAPI(SppAPI):
