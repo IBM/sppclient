@@ -661,7 +661,6 @@ class OracleAPI(SppAPI):
                 }
             }
         }
-        print(applyoptionsdata)
         return self.spp_session.post(data=applyoptionsdata, path='ngp/application?action=applyOptions')
 
 
@@ -818,7 +817,6 @@ class HypervAPI(SppAPI):
             "subtype": "hyperv",
             "resource": resources
         }
-        print(data)
         return self.spp_session.post(data=data, path='ngp/hypervisor?action=adhoc')
 
 
@@ -895,6 +893,7 @@ class slaAPI(SppAPI):
         slainfo = {
             "name": name,
             "version": "1.0",
+            "type": "snapshot",
             "spec": {
                 "simple": True,
                 "subpolicy": [
@@ -993,7 +992,6 @@ class slaAPI(SppAPI):
                                 "href": sla['links']['self']['href'],
                                 "id":sla['id'],
                                 "name":sla['name']}]}
-
         return self.spp_session.post(data=applySLAPolicies, path='ngp/'+target+'?action=applySLAPolicies')
 
     def assign_hypervisorsla(self, instance_href, instance_id, instance_metadataPath, sla_href, sla_id, sla_name, subtype):
@@ -2121,6 +2119,14 @@ class cloudAPI(SppAPI):
     def unregister_cloud(self, cloud_id):
         response = self.spp_session.delete(path='api/cloud/{0}'.format(cloud_id))
         return response
+    
+    def ec2_adhoc_backup(self, sla_name, resources):
+        data = {
+            "slaPolicyName": sla_name,
+            "subtype": "awsec2",
+            "resource": resources
+        }
+        return self.spp_session.post(data=data, path='ngp/hypervisor?action=adhoc')
 
 
 class catalogAPI(SppAPI):
