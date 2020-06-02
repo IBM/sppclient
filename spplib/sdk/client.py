@@ -138,7 +138,7 @@ def change_ospassword(url, oldpassword, newpassword):
 
 
 class SppSession(object):
-    def __init__(self, url, username=None, password=None, sessionid=None):
+    def __init__(self, url, username=None, password=None, sessionid=None, raise_error=True):
         self.url = url
         self.sess_url = url + '/api'
         self.api_url = url + ''
@@ -148,7 +148,8 @@ class SppSession(object):
 
         self.conn = requests.Session()
         self.conn.verify = False
-        self.conn.hooks.update({'response': raise_response_error})
+        if raise_error:
+            self.conn.hooks.update({'response': raise_response_error})
 
         if not self.sessionid:
             if self.username and self.password:
