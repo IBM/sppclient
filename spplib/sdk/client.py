@@ -138,7 +138,7 @@ def change_ospassword(url, oldpassword, newpassword):
 
 
 class SppSession(object):
-    def __init__(self, url, username=None, password=None, sessionid=None):
+    def __init__(self, url, username=None, password=None, sessionid=None, raise_error=True):
         self.url = url
         self.sess_url = url + '/api'
         self.api_url = url + ''
@@ -148,7 +148,8 @@ class SppSession(object):
 
         self.conn = requests.Session()
         self.conn.verify = False
-        self.conn.hooks.update({'response': raise_response_error})
+        if raise_error:
+            self.conn.hooks.update({'response': raise_response_error})
 
         if not self.sessionid:
             if self.username and self.password:
@@ -478,7 +479,6 @@ class JobAPI(SppAPI):
             job_sessions = self.spp_session.get(
                 path='api/endeavour/jobsession?filter=[{"property":"jobId","value":' + job['id'] + ',"op":"="}]&sort=[{"property":"start","direction":"ASC"}]'
             )['sessions'][:number_of_jobs]
-            print(job_sessions)
             sessionStatus = 'COMPLETED'
             for j in job_sessions:
                 if j['status'] in ['PARTIAL', 'FAILED']:
@@ -662,7 +662,6 @@ class OracleAPI(SppAPI):
                 }
             }
         }
-        print(applyoptionsdata)
         return self.spp_session.post(data=applyoptionsdata, path='ngp/application?action=applyOptions')
 
 
@@ -813,6 +812,14 @@ class HypervAPI(SppAPI):
 
         return self.spp_session.post(data=applyoptionsdata, path='ngp/hypervisor?action=applyOptions')
 
+    def adhoc_backup(self, sla_name, resources):
+        data = {
+            "slaPolicyName": sla_name,
+            "subtype": "hyperv",
+            "resource": resources
+        }
+        return self.spp_session.post(data=data, path='ngp/hypervisor?action=adhoc')
+
 
 class SqlAPI(SppAPI):
     def __init__(self, spp_session):
@@ -887,6 +894,7 @@ class slaAPI(SppAPI):
         slainfo = {
             "name": name,
             "version": "1.0",
+            "type": "snapshot",
             "spec": {
                 "simple": True,
                 "subpolicy": [
@@ -985,7 +993,6 @@ class slaAPI(SppAPI):
                                 "href": sla['links']['self']['href'],
                                 "id":sla['id'],
                                 "name":sla['name']}]}
-
         return self.spp_session.post(data=applySLAPolicies, path='ngp/'+target+'?action=applySLAPolicies')
 
     def assign_hypervisorsla(self, instance_href, instance_id, instance_metadataPath, sla_href, sla_id, sla_name, subtype):
@@ -2173,6 +2180,14 @@ class cloudAPI(SppAPI):
     def unregister_cloud(self, cloud_id):
         response = self.spp_session.delete(path='api/cloud/{0}'.format(cloud_id))
         return response
+    
+    def ec2_adhoc_backup(self, sla_name, resources):
+        data = {
+            "slaPolicyName": sla_name,
+            "subtype": "awsec2",
+            "resource": resources
+        }
+        return self.spp_session.post(data=data, path='ngp/hypervisor?action=adhoc')
 
 
 class catalogAPI(SppAPI):
