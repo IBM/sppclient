@@ -1597,7 +1597,7 @@ class restoreAPI(SppAPI):
 
         return self.spp_session.post(data=restore, path='ngp/hypervisor?action=restore')['response']
 
-    def restoreHyperV(self, subType, hyperv_href, hyperv_name, hyperv_id, hyperv_version, site_href):
+    def restoreHyperV(self, subType, hyperv_href, hyperv_name, hyperv_id, hyperv_version, site_href, vm_overwrite=False):
         restore = {"subType": subType,
                    "spec": {
                        "source": [{
@@ -1628,6 +1628,7 @@ class restoreAPI(SppAPI):
                                "continueonerror": True,
                                "autocleanup": True,
                                "allowsessoverwrite": True,
+                               "allowvmoverwrite": vm_overwrite,
                                "mode": "test",
                                "vmscripts": False,
                                "restorevmtag": True,
@@ -1635,6 +1636,55 @@ class restoreAPI(SppAPI):
                    "script": {}
                    }
         return self.spp_session.post(data=restore, path='ngp/hypervisor?action=restore')['response']
+    
+
+    def restore_vmware_detailed(self, subType, hyperv_href, hyperv_name, hyperv_id, hyperv_version, 
+                                copy_href, vm_overwrite=False):
+        restore = {
+                    "subType": subType,
+                    "spec": {
+                        "source": [{
+                            "href": hyperv_href,
+                            "metadata": {
+                                "name": hyperv_name
+                            },
+                            "resourceType": "vm",
+                            "id": hyperv_id,
+                            "include": True,
+                            "version": {
+                                "href": hyperv_version,
+                                "copy": {
+                                    "href": copy_href
+                                },
+                                "metadata": {
+                                    "useLatest": False
+                                }
+                            }
+                        }],
+                        "subpolicy": [{
+                            "type": "IV",
+                            "destination": {
+                            "systemDefined": True
+                            },
+                            "source": None,
+                            "option": {
+                                "protocolpriority": "iSCSI",
+                                "poweron": False,
+                                "continueonerror": True,
+                                "autocleanup": True,
+                                "allowsessoverwrite": True,
+                                "allowvmoverwrite": vm_overwrite,
+                                "mode": "test",
+                                "vmscripts": False,
+                                "restorevmtag": True,
+                                "update_vmx": True
+                            }
+                        }]
+                        },
+                        "script": {}
+                    }
+        return self.spp_session.post(data=restore, path='ngp/hypervisor?action=restore')['response']
+
 
     def restoreVMCloneAlteranteHost(self, subType, hyperv_href, hyperv_name,
                                     hyperv_id, hyperv_latestversion, host_name, host_resource_type,
