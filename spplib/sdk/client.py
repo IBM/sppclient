@@ -57,7 +57,8 @@ resource_to_endpoint = {
     'endeavour': 'api/endeavour',
     'search': 'api/endeavour/search',
     'cloud': 'api/cloud',
-    'key': '/api/identity/key'
+    'key': '/api/identity/key',
+    'certificate': '/api/security/certificate'
 }
 
 resource_to_listfield = {
@@ -2130,6 +2131,29 @@ class keyAPI(SppAPI):
         registered_key = self.spp_session.post(
             data=key_data, path='/api/identity/key')
         return registered_key
+
+
+class CertificateAPI(SppAPI):
+
+    def __init__(self, spp_session):
+        super(CertificateAPI, self).__init__(spp_session, 'certificate')
+
+    def upload_certificate(self, data, files):
+        url = build_url(self.spp_session.api_url, 'api/security/certificate')
+
+        headers = {'X-Endeavour-sessionid': self.spp_session.sessionid, 'Accept': '*/*'}
+        resp = requests.post(url=url, headers=headers, data=data, files=files, verify=False)
+
+        return resp
+
+    def remove_certificate(self, script_id):
+        url = build_url(self.spp_session.api_url, 'api/security/certificate/')
+        url = url + str(script_id)
+        headers = {'X-Endeavour-sessionid': self.spp_session.sessionid, 'Accept': '*/*'}
+        resp = requests.delete(url, headers=headers, verify=False)
+        print(resp)
+
+        return resp
 
 
 class cloudAPI(SppAPI):
