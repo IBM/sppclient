@@ -2263,6 +2263,32 @@ class cloudAPI(SppAPI):
         }
         return self.spp_session.post(data=data, path='ngp/hypervisor?action=adhoc')
 
+    def register_repo_server(self, name, hostname, port, key_name, access_key, secret_key, certificate_href):
+        data = {
+            "type": "s3",
+            "provider": "sp",
+            "accesskey": {
+                "name": key_name,
+                "keytype": "iam_key",
+                "access": access_key,
+                "secret": secret_key
+            },
+            "properties": {
+                "type": "s3",
+                "certificate": {
+                    "href": certificate_href
+
+                },
+                "hostname": hostname,
+                "port": port
+
+            },
+            "name": name
+        }
+
+        repo_server = self.spp_session.post(data=data, path='ngp/cloud')['response']
+        return repo_server
+
 
 class catalogAPI(SppAPI):
 
