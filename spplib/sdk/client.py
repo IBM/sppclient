@@ -1638,7 +1638,7 @@ class restoreAPI(SppAPI):
     
 
     def restore_vmware_detailed(self, subType, hyperv_href, hyperv_name, hyperv_id, hyperv_version, 
-                                copy_href, vm_overwrite=False):
+                                copy_href, vm_overwrite=False, system_ip=True):
         restore = {
                     "subType": subType,
                     "spec": {
@@ -1663,7 +1663,7 @@ class restoreAPI(SppAPI):
                         "subpolicy": [{
                             "type": "IV",
                             "destination": {
-                            "systemDefined": True
+                            "systemDefined": system_ip
                             },
                             "source": None,
                             "option": {
