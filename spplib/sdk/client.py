@@ -2182,6 +2182,10 @@ class keyAPI(SppAPI):
             data=key_data, path='/api/identity/key')
         return registered_key
 
+    def unregister_key(self, key_id):
+        deleted_key = self.spp_session.delete(path='/api/identity/key/{0}'.format(str(key_id)))
+        return deleted_key
+
 
 class CertificateAPI(SppAPI):
 
