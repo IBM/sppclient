@@ -866,6 +866,14 @@ class SqlAPI(SppAPI):
 
         return self.spp_session.post(data=applyoptionsdata, path='ngp/application?action=applyOptions')
 
+    def adhoc_backup(self, sla_name, resources):
+        data = {
+            "slaPolicyName": sla_name,
+            "subtype": "sql",
+            "resource": resources
+        }
+        return self.spp_session.post(data=data, path='ngp/application?action=adhoc')
+
 
 class slaAPI(SppAPI):
     def __init__(self, spp_session):
