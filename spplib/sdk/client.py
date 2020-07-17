@@ -987,7 +987,7 @@ class slaAPI(SppAPI):
         resp = self.post(data=slainfo)
         return resp
 
-    def assign_sla(self, instances, sla, subtype, target='application'):
+    def assign_sla(self, instances, sla=None, subtype='vmware', target='application'):
         # Added target variable to make the function more generic (ex. 'hypervisor' or 'application')
         # without breaking backwards compatibility thanks to target defaulting to 'application'.
 
@@ -1006,7 +1006,7 @@ class slaAPI(SppAPI):
         applySLAPolicies = {"subtype": subtype,
                             "version": "1.0",
                             "resources": temp_resources,
-                            "slapolicies": [{
+                            "slapolicies": [] if sla == None else [{
                                 "href": sla['links']['self']['href'],
                                 "id":sla['id'],
                                 "name":sla['name']}]}
