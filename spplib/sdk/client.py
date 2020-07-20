@@ -1551,9 +1551,9 @@ class restoreAPI(SppAPI):
 
         return self.spp_session.post(data=restore, path='ngp/application?action=restore')['response']
 
-    def restore_vm_clone(self, subType, vm_href, vm_name, vm_id, vm_version, vm_clone_name):
+    def restore_vm_clone(self, subType, vm_href, vm_name, vm_id, vm_version, vm_clone_name, streaming=True):
         restore = {
-            "subType": "vmware",
+            "subType": subType,
             "spec": {
                 "source": [
                     {
@@ -1599,7 +1599,7 @@ class restoreAPI(SppAPI):
                             "vmscripts": False,
                             "protocolpriority": "iSCSI",
                             "IR": False,
-                            "streaming": True
+                            "streaming": streaming
                         }
                     }
                 ]
@@ -1610,7 +1610,7 @@ class restoreAPI(SppAPI):
                 "continueScriptsOnError": False
             }
         }
-
+        
         return self.spp_session.post(data=restore, path='ngp/hypervisor?action=restore')['response']
 
     def restoreHyperV(self, subType, hyperv_href, hyperv_name, hyperv_id, hyperv_version, site_href, vm_overwrite=False):
@@ -2030,7 +2030,7 @@ class restoreAPI(SppAPI):
                                    "isOffload": None}}}], "view": "applicationview"}}
         return self.spp_session.post(data=restore, path='ngp/application?action=restore')['response']
 
-    def restore_vm_production(self, hv_type, hv_href, hv_name, hv_id, hv_version, site_href):
+    def restore_vm_production(self, hv_type, hv_href, hv_name, hv_id, hv_version, site_href, streaming):
         data = {
             "subType": hv_type,
             "spec": {
@@ -2080,7 +2080,7 @@ class restoreAPI(SppAPI):
                             "vmscripts": False,
                             "protocolpriority": "iSCSI",
                             "IR": False,
-                            "streaming": True
+                            "streaming": streaming
                         }
                     }
                 ]
