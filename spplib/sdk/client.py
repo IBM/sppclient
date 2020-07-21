@@ -361,9 +361,16 @@ class JobSessionAPI(SppAPI):
             path='api/endeavour/jobsession/{}?action=expire'.format(job_session_id)
         )
 
+        return response
 
+    def expire_job_session_all(self, job_session_id):
+
+        response = self.spp_session.post(
+            path='api/endeavour/jobsession/{}?action=expireall'.format(job_session_id)
+        )
 
         return response
+
 
 class DiagAPI(SppAPI):
     def __init__(self, spp_session):
