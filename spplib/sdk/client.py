@@ -672,6 +672,14 @@ class OracleAPI(SppAPI):
         }
         return self.spp_session.post(data=applyoptionsdata, path='ngp/application?action=applyOptions')
 
+    def adhoc_backup(self, sla_name, resources):
+        data = {
+            "slaPolicyName": sla_name,
+            "subtype": "oracle",
+            "resource": resources
+        }
+        return self.spp_session.post(data=data, path='ngp/application?action=adhoc')
+
 
 class FileSystemAPI(SppAPI):
     def __init__(self, spp_session):
@@ -873,6 +881,14 @@ class SqlAPI(SppAPI):
 
         return self.spp_session.post(data=applyoptionsdata, path='ngp/application?action=applyOptions')
 
+    def adhoc_backup(self, sla_name, resources):
+        data = {
+            "slaPolicyName": sla_name,
+            "subtype": "sql",
+            "resource": resources
+        }
+        return self.spp_session.post(data=data, path='ngp/application?action=adhoc')
+
 
 class slaAPI(SppAPI):
     def __init__(self, spp_session):
@@ -978,7 +994,7 @@ class slaAPI(SppAPI):
         resp = self.post(data=slainfo)
         return resp
 
-    def assign_sla(self, instances, sla, subtype, target='application'):
+    def assign_sla(self, instances, sla=None, subtype='vmware', target='application'):
         # Added target variable to make the function more generic (ex. 'hypervisor' or 'application')
         # without breaking backwards compatibility thanks to target defaulting to 'application'.
 
@@ -997,7 +1013,7 @@ class slaAPI(SppAPI):
         applySLAPolicies = {"subtype": subtype,
                             "version": "1.0",
                             "resources": temp_resources,
-                            "slapolicies": [{
+                            "slapolicies": [] if sla == None else [{
                                 "href": sla['links']['self']['href'],
                                 "id":sla['id'],
                                 "name":sla['name']}]}
@@ -1542,9 +1558,9 @@ class restoreAPI(SppAPI):
 
         return self.spp_session.post(data=restore, path='ngp/application?action=restore')['response']
 
-    def restore_vm_clone(self, subType, vm_href, vm_name, vm_id, vm_version, vm_clone_name):
+    def restore_vm_clone(self, subType, vm_href, vm_name, vm_id, vm_version, vm_clone_name, streaming=True):
         restore = {
-            "subType": "vmware",
+            "subType": subType,
             "spec": {
                 "source": [
                     {
@@ -1590,7 +1606,7 @@ class restoreAPI(SppAPI):
                             "vmscripts": False,
                             "protocolpriority": "iSCSI",
                             "IR": False,
-                            "streaming": True
+                            "streaming": streaming
                         }
                     }
                 ]
@@ -1601,7 +1617,7 @@ class restoreAPI(SppAPI):
                 "continueScriptsOnError": False
             }
         }
-
+        
         return self.spp_session.post(data=restore, path='ngp/hypervisor?action=restore')['response']
 
     def restoreHyperV(self, subType, hyperv_href, hyperv_name, hyperv_id, hyperv_version, site_href, vm_overwrite=False):
@@ -2021,7 +2037,7 @@ class restoreAPI(SppAPI):
                                    "isOffload": None}}}], "view": "applicationview"}}
         return self.spp_session.post(data=restore, path='ngp/application?action=restore')['response']
 
-    def restore_vm_production(self, hv_type, hv_href, hv_name, hv_id, hv_version, site_href):
+    def restore_vm_production(self, hv_type, hv_href, hv_name, hv_id, hv_version, site_href, streaming):
         data = {
             "subType": hv_type,
             "spec": {
@@ -2071,7 +2087,7 @@ class restoreAPI(SppAPI):
                             "vmscripts": False,
                             "protocolpriority": "iSCSI",
                             "IR": False,
-                            "streaming": True
+                            "streaming": streaming
                         }
                     }
                 ]
