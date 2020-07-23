@@ -2532,6 +2532,27 @@ class vsnapAPI(SppAPI):
 
         return response
 
+    def get_disks(self, vsnap_id):
+        response = self.get("{0}/management/disk".format(vsnap_id))
+
+        return response
+
+    def attach_disk(self, vsnap_id, disk_id):
+        data = { "disk_list": [disk_id] }
+        
+        try:
+            self.post("{0}/management?action=rescan".format(vsnap_id))
+            time.sleep(30)
+            response = self.post("{0}/management/pool/1?action=expand".format(vsnap_id), data = data)
+        
+            return response
+
+        except requests.HTTPError as er:
+            logger = logging.getLogger()
+            logger.error(er)
+            return False
+
+
 """
 Used for communication with the MongoDB database that the SPP application runs on.
 """
