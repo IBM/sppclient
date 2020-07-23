@@ -907,6 +907,35 @@ class slaAPI(SppAPI):
         resp = self.post(data=slainfo)
         return resp
 
+    def create_replication_sla(self, name, sites):
+        slainfo = {
+            "name": name,
+            "version": "1.0",
+            "spec": {
+                "simple": True,
+                "subpolicy": [
+                    {
+                        "type": "REPLICATION",
+                        "software": True,
+                        "retention": {"age": 15},
+                        "useEncryption": False,
+                        "trigger": {},
+                        "site": sites[0]
+                    },
+                    {
+                        "type": "REPLICATION",
+                        "retention": {},
+                        "useEncryption": False,
+                        "software": False,
+                        "trigger": {},
+                        "site": sites[1]
+                    }
+                ]
+            }
+        }
+        resp = self.post(data=slainfo)
+        return resp
+
     def create_ec2_sla(self, name, snapshot_prefix=""):
         slainfo = {
             "name": name,
