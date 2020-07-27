@@ -2066,7 +2066,7 @@ class restoreAPI(SppAPI):
                                    "isOffload": None}}}], "view": "applicationview"}}
         return self.spp_session.post(data=restore, path='ngp/application?action=restore')['response']
 
-    def restore_vm_production(self, hv_type, hv_href, hv_name, hv_id, hv_version, site_href, streaming):
+    def restore_vm_production(self, hv_type, hv_href, hv_name, hv_id, hv_version, site_href, streaming=True):
         data = {
             "subType": hv_type,
             "spec": {
