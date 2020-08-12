@@ -1649,7 +1649,7 @@ class restoreAPI(SppAPI):
         
         return self.spp_session.post(data=restore, path='ngp/hypervisor?action=restore')['response']
 
-    def restoreHyperV(self, subType, hyperv_href, hyperv_name, hyperv_id, hyperv_version, site_href, vm_overwrite=False):
+    def restoreHyperV(self, subType, hyperv_href, hyperv_name, hyperv_id, hyperv_version, site_href, vm_overwrite=False, poweron=False):
         restore = {"subType": subType,
                    "spec": {
                        "source": [{
@@ -1676,7 +1676,7 @@ class restoreAPI(SppAPI):
                            },
                            "option": {
                                "protocolpriority": "iSCSI",
-                               "poweron": False,
+                               "poweron": poweron,
                                "continueonerror": True,
                                "autocleanup": True,
                                "allowsessoverwrite": True,
