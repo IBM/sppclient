@@ -315,8 +315,9 @@ class SppAPI(object):
         self.spp_session = spp_session
         self.restype = restype
         self.endpoint = endpoint
-        self.list_field = resource_to_listfield.get(
-            restype, self.restype + 's')
+        if restype is not None:
+            self.list_field = resource_to_listfield.get(
+                restype, self.restype + 's')
 
     def get(self, resid=None, path=None, params={}, url=None):
         return self.spp_session.get(restype=self.restype, resid=resid, path=path, params=params, url=url)
