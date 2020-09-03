@@ -139,13 +139,14 @@ def change_ospassword(url, oldpassword, newpassword):
 
 
 class SppSession(object):
-    def __init__(self, url, username=None, password=None, sessionid=None, raise_error=True):
+    def __init__(self, url, username=None, password=None, sessionid=None, raise_error=True, admin_console_sessionid=None):
         self.url = url
         self.sess_url = url + '/api'
         self.api_url = url + ''
         self.username = username
         self.password = password
         self.sessionid = sessionid
+        self.admin_console_sessionid = admin_console_sessionid
 
         self.conn = requests.Session()
         self.conn.verify = False
@@ -159,7 +160,7 @@ class SppSession(object):
                 raise Exception('Please provide login credentials.')
 
         self.conn.headers.update({'X-Endeavour-Sessionid': self.sessionid})
-        self.conn.headers.update({'Content-Type': 'application/json'})
+        # self.conn.headers.update({'Content-Type': 'application/json'})
         self.conn.headers.update({'Accept': 'application/json'})
         self.conn.headers.update({'X-Endeavour-Locale': 'en-us'})
 
@@ -167,6 +168,42 @@ class SppSession(object):
         r = self.conn.post("%s/endeavour/session" % self.sess_url,
                            auth=HTTPBasicAuth(self.username, self.password))
         self.sessionid = r.json()['sessionid']
+
+    def login_to_admin_console(self):
+        data = {
+            'ltype': 'product',
+            'username': self.username,
+            'password': self.password
+        }
+        
+        r = self.conn.post("%s:8090/emi/api/login" % self.url, data=data)
+        self.admin_console_sessionid = r.json()['authoutput']['sessionId']
+        self.conn.headers.update({'x-ac-sessionid': self.admin_console_sessionid})
+
+    def restart_spp(self):
+        data = {
+            'appaction': 'restartapp'
+        }
+        try: 
+            r = self.conn.post("%s:8090/emi/api/manageapp" % self.url, data=data)
+        except requests.exceptions.HTTPError as e:
+           
+            logging.warning(e)
+            raise e
+
+        # Wait for the server to actually go down.
+        time.sleep(60)
+
+        # Periodically check if the server is already up.
+        for _ in range(90):
+            resp = requests.get(self.url + '/api/lifecycle/ping', verify=False)
+            if resp.status_code == 200:
+                return resp
+
+            time.sleep(10)
+
+        raise Exception('Server is taking too long to respond!')
+        
 
     def logout(self):
         r = self.conn.delete("%s/endeavour/session" % self.sess_url)
