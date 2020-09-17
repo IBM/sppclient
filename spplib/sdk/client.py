@@ -408,6 +408,17 @@ class JobSessionAPI(SppAPI):
         )
 
         return response
+    
+    def get_job_history(self, page_size=100, page_start_index=0):
+        
+        job_sessions = self.spp_session.get(path='api/endeavour/jobsession',
+                                    params={'pageSize': page_size, 'pageStartIndex': page_start_index,
+                                            'sort': '[{"property":"start","direction":"DESC"}]',
+                                            'filter': '[{"property":"status","value":["COMPLETED","PARTIAL","FAILED","CANCELLED","ABORTED"],"op":"IN"},' +
+                                            '{"property":"rangeunit","value":"hour","op":"="},{"property":"range","value":12,"op":"="}]'}
+                                        )
+
+        return job_sessions['sessions']
 
 
 class DiagAPI(SppAPI):
