@@ -18,7 +18,7 @@ parser.add_option("--user", dest="username", help="SPP Username")
 parser.add_option("--pass", dest="password", help="SPP Password")
 parser.add_option("--host", dest="host", help="SPP Host, (ex. https://172.20.49.49)")
 parser.add_option("--filter", dest="filter", help="Filter for unique datacenter, cluster or folder name in case VM name is not unique (optional)")
-parser.add_option("--vm", dest="vm", help="VM Name")
+parser.add_option("--vm", dest="vm", help="VM Name(s) (comma seperated if multiple)")
 parser.add_option("--sla", dest="sla", help="SLA policy to run if VM is assigned to multiple")
 (options, args) = parser.parse_args()
 
@@ -31,29 +31,31 @@ def validate_input():
         print("Invalid input, use -h switch for help")
         sys.exit(1)
 
-def find_vm():
-    searchdata = {"name":options.vm,"hypervisorType":"vmware"}
+def find_vm(vmname):
+    searchdata = {"name":vmname,"hypervisorType":"vmware"}
     vmsearch = client.SppAPI(session, 'corehv').post(path="/search?resourceType=vm&from=hlo", data=searchdata)['vms']
     if not vmsearch:
-        logger.warning("Did not find vm " + options.vm)
+        logger.warning("Did not find vm " + vmname)
         session.logout()
         sys.exit(2)
     for foundvm in vmsearch:
-        if foundvm['name'] == options.vm:
+        if foundvm['name'] == vmname:
             if options.filter is not None:
                 if options.filter in foundvm['config']['location']:
                     return foundvm
             else:
                 return foundvm
-    logger.warning("Did not find vm " + options.vm)
+    logger.warning("Did not find vm " + vmname)
     session.logout()
     sys.exit(3)
 
 def backup_vm():
-    vm = find_vm()
+    vmurls = []
+    for vmname in options.vm.split(","):
+        vm = find_vm(vmname)
+        vmurls.append(vm['links']['self']['href'])
     backup = {}
-    backup['resource'] = []
-    backup['resource'].append(vm['links']['self']['href'])
+    backup['resource'] = vmurls
     backup['subtype'] = "vmware"
     if len(vm['storageProfiles']) < 1:
         logger.warning("VM is not assigned to an SLA policy")
