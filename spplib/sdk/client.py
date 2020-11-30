@@ -216,6 +216,10 @@ class SppSession(object):
         if url is None:
             url = build_url(self.api_url, restype, resid, path, endpoint)
 
+        url = requote_uri(url)
+        url = url.replace("[", "%5B")
+        url = url.replace("]", "%5D")
+
         logging.info('\n\n')
         logging.info('GET  {}'.format(url))
 
@@ -236,6 +240,10 @@ class SppSession(object):
     def diag_get(self, restype=None, resid=None, path=None, params={}, endpoint=None, url=None, outfile=None):
         if url is None:
             url = build_url(self.api_url, restype, resid, path, endpoint)
+
+        url = requote_uri(url)
+        url = url.replace("[", "%5B")
+        url = url.replace("]", "%5D")
 
         logging.info('\n\n')
         logging.info('GET  {}'.format(url))
@@ -261,6 +269,10 @@ class SppSession(object):
         if url is None:
             url = build_url(self.api_url, restype, resid, path, endpoint)
 
+        url = requote_uri(url)
+        url = url.replace("[", "%5B")
+        url = url.replace("]", "%5D")
+
         r = self.conn.get(url, params=params)
         # The response header Content-Disposition contains default file name
         #   Content-Disposition: attachment; filename=log_1490030341274.zip
@@ -284,6 +296,10 @@ class SppSession(object):
         if url is None:
             url = build_url(self.api_url, restype, resid, path, endpoint)
 
+        url = requote_uri(url)
+        url = url.replace("[", "%5B")
+        url = url.replace("]", "%5D")
+
         logging.info('\n\n')
         logging.info('DELETE {}'.format(url))
 
@@ -304,6 +320,10 @@ class SppSession(object):
     def post(self, restype=None, resid=None, path=None, data={}, params={}, endpoint=None, url=None):
         if url is None:
             url = build_url(self.api_url, restype, resid, path, endpoint)
+
+        url = requote_uri(url)
+        url = url.replace("[", "%5B")
+        url = url.replace("]", "%5D")
 
         logging.info('\n\n')
         logging.info('POST  {}'.format(url))
@@ -327,6 +347,10 @@ class SppSession(object):
     def put(self, restype=None, resid=None, path=None, data={}, params={}, endpoint=None, url=None):
         if url is None:
             url = build_url(self.api_url, restype, resid, path, endpoint)
+
+        url = requote_uri(url)
+        url = url.replace("[", "%5B")
+        url = url.replace("]", "%5D")
 
         logging.info('\n\n')
         logging.info('PUT  {}'.format(url))
@@ -358,18 +382,12 @@ class SppAPI(object):
                 restype, self.restype + 's')
 
     def get(self, resid=None, path=None, params={}, url=None):
-        if url:
-            requote_uri(url)
         return self.spp_session.get(restype=self.restype, resid=resid, path=path, params=params, url=url)
 
     def get_log(self, resid=None, path=None, params={}, url=None, outfile=None):
-        if url:
-            requote_uri(url)
         return self.spp_session.diag_get(restype=self.restype, resid=resid, path=path, params=params, url=url, outfile=outfile)
 
     def stream_get(self, resid=None, path=None, params={}, url=None, outfile=None):
-        if url:
-            requote_uri(url)
         return self.spp_session.stream_get(restype=self.restype, resid=resid, path=path,
                                            params=params, url=url, outfile=outfile)
 
@@ -380,16 +398,11 @@ class SppAPI(object):
         return self.spp_session.get(restype=self.restype)[self.list_field]
 
     def post(self, resid=None, path=None, data={}, params={}, url=None):
-        if url:
-            requote_uri(url)
         return self.spp_session.post(restype=self.restype, resid=resid, path=path, data=data,
                                      params=params, url=url)
 
     def put(self, resid=None, path=None, data={}, params={}, url=None):
-        if url:
-            requote_uri(url)
         return self.spp_session.put(restype=self.restype, resid=resid, path=path, data=data,
-
                                     params=params, url=url)
 
 
