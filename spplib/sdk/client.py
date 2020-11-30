@@ -94,6 +94,12 @@ def build_url(baseurl, restype=None, resid=None, path=None, endpoint=None):
             path = '/' + path
         url = url + path
 
+    def replace_double_slash(url, old, new, occurrence):
+        li = url.rsplit(old, occurrence)
+        return new.join(li)
+ 
+    url = replace_double_slash(url, '//', '/', url.count('//') - 1)
+
     return url.replace("/api/ngp", "/ngp")
 
 
