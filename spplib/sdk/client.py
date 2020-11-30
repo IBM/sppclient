@@ -8,6 +8,7 @@ import traceback
 from spplib.sdk import system
 
 import requests
+from requests.utils import requote_uri
 from requests.auth import HTTPBasicAuth
 
 try:
@@ -357,12 +358,18 @@ class SppAPI(object):
                 restype, self.restype + 's')
 
     def get(self, resid=None, path=None, params={}, url=None):
+        if url:
+            requote_uri(url)
         return self.spp_session.get(restype=self.restype, resid=resid, path=path, params=params, url=url)
 
     def get_log(self, resid=None, path=None, params={}, url=None, outfile=None):
+        if url:
+            requote_uri(url)
         return self.spp_session.diag_get(restype=self.restype, resid=resid, path=path, params=params, url=url, outfile=outfile)
 
     def stream_get(self, resid=None, path=None, params={}, url=None, outfile=None):
+        if url:
+            requote_uri(url)
         return self.spp_session.stream_get(restype=self.restype, resid=resid, path=path,
                                            params=params, url=url, outfile=outfile)
 
@@ -373,10 +380,14 @@ class SppAPI(object):
         return self.spp_session.get(restype=self.restype)[self.list_field]
 
     def post(self, resid=None, path=None, data={}, params={}, url=None):
+        if url:
+            requote_uri(url)
         return self.spp_session.post(restype=self.restype, resid=resid, path=path, data=data,
                                      params=params, url=url)
 
     def put(self, resid=None, path=None, data={}, params={}, url=None):
+        if url:
+            requote_uri(url)
         return self.spp_session.put(restype=self.restype, resid=resid, path=path, data=data,
 
                                     params=params, url=url)
