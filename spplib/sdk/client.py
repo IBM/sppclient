@@ -2145,7 +2145,7 @@ class restoreAPI(SppAPI):
                                    "isOffload": None}}}], "view": "applicationview"}}
         return self.spp_session.post(data=restore, path='ngp/application?action=restore')['response']
 
-    def restore_vm_production(self, hv_type, hv_href, hv_name, hv_id, hv_version, site_href, streaming=True):
+    def restore_vm_production(self, hv_type, hv_href, hv_name, hv_id, hv_version, site_href, streaming=True, restore_mode="recovery"):
         data = {
             "subType": hv_type,
             "spec": {
@@ -2191,7 +2191,7 @@ class restoreAPI(SppAPI):
                             "autocleanup": True,
                             "allowsessoverwrite": True,
                             "restorevmtag": None,
-                            "mode": "recovery",
+                            "mode": restore_mode,
                             "vmscripts": False,
                             "protocolpriority": "iSCSI",
                             "IR": False,
@@ -2209,8 +2209,8 @@ class restoreAPI(SppAPI):
 
         return self.spp_session.post(data=data, path='ngp/hypervisor?action=restore')['response']
 
-    def restore_ec2_clone(self, hyperv_href, hyperv_name, hyperv_id, hyperv_version_href, hyperv_copy_href,
-                          hyperv_copy_time, restore_hyperv_name):
+    def restore_ec2(self, hyperv_href, hyperv_name, hyperv_id, hyperv_version_href, hyperv_copy_href,
+                          hyperv_copy_time, restore_hyperv_name, restore_mode="clone"):
 
         data = {
             "subType": "awsec2",
@@ -2258,7 +2258,7 @@ class restoreAPI(SppAPI):
                             "autocleanup": True,
                             "allowsessoverwrite": True,
                             "restorevmtag": True,
-                            "mode": "clone",
+                            "mode": restore_mode,
                             "vmscripts": False,
                             "protocolpriority": "iSCSI",
                             "IR": False,
