@@ -988,7 +988,7 @@ class ExchangeAPI(SppAPI):
                 return db
 
     def get_databases_in_instance(self, instanceid):
-        return self.get(path="instance/%s/database?from=recovery" % instanceid)
+        return self.get(path="instance/%s/database" % instanceid)
     
     def get_database_copy_versions(self, instanceid, databaseid):
         return self.get(path="instance/%s/database/%s" % (instanceid, databaseid) + '/version?from=recovery&sort=[{"property": "protectionTime", "direction": "DESC"}]')
