@@ -764,6 +764,74 @@ class FileSystemAPI(SppAPI):
     def __init__(self, spp_session):
         super(FileSystemAPI, self).__init__(spp_session, 'file')
 
+    def register(self, file_server_data):
+        data = {
+            "hostAddress": file_server_data["host_address"],
+            "username": file_server_data["username"],
+            "password": file_server_data["password"],
+            "osType":"windows",
+            "applicationType":"file",
+            "addToCatJob":True,
+            "script":False,
+            "application":True,
+            "useForAllInstances":False,
+            "opProperties":
+                {   
+                    "maxConcurrency":10
+                }
+        }
+
+        file_system_config = self.spp_session.post(path=resource_to_endpoint['appserver'], data=data)
+
+        while True:
+            time.sleep(5)
+
+            jobs = self.spp_session.get(path='api/endeavour/job?')['jobs']
+            try:
+                for job in jobs:
+                    if(job['serviceId'] == "serviceprovider.catalog.application"):
+                        status = job['status'] 
+            except:
+                pass
+
+            if status != "RUNNING":
+                break
+
+        return file_system_config 
+
+    def test_connection(self, file_server):
+        data = {
+            "type": "application"
+        }
+
+        response = self.spp_session.post(path='/api/appserver/' + file_server['id'], params={'action': 'test'}, data=data)
+        url = response["statusHref"]
+        is_finished = False 
+
+        # Wait until end of test
+        while is_finished == False:
+            time.sleep(5)
+            response = self.spp_session.get(url=url)
+            is_finished = bool(response["testsComplete"])
+
+        # Collect all non-successfull tests
+        fails = {}
+        for group in response["configGroups"]:
+            for t in group["tests"]:
+                if t["status"] != "SUCCESS":
+                    fails[f"{group['name']} ({group['description']}) - {t['name']} ({t['description']})"] = t["status"]
+        
+        return fails, response
+
+    def get_instances(self, page_size=100):
+        params = {
+            "from": "hlo",
+            "pageSize": page_size,
+            "sort": '[{"property":"name","direction":"ASC"}]'
+        }
+
+        return self.get(path='instance', params=params)['instances']
+
     def get_disks_in_instance(self, instanceid):
         return self.get(path="instance/%s/database?from=hlo" % instanceid)
 
@@ -1117,6 +1185,9 @@ class slaAPI(SppAPI):
                 "href": instance['links']['self']['href'],
                 "id": instance['id'],
                 "metadataPath": instance['metadataPath']})
+
+        logging.warning("RESOURCES")
+        logging.warning( temp_resources)
 
         applySLAPolicies = {"subtype": subtype,
                             "version": "1.0",
