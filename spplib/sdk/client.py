@@ -1269,9 +1269,6 @@ class slaAPI(SppAPI):
                 "id": instance['id'],
                 "metadataPath": instance['metadataPath']})
 
-        logging.warning("RESOURCES")
-        logging.warning( temp_resources)
-
         applySLAPolicies = {"subtype": subtype,
                             "version": "1.0",
                             "resources": temp_resources,
