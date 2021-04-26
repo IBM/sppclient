@@ -77,8 +77,7 @@ def get_alerts(session):
             starttime = int(round(time.time() * 1000)) - timeframems
             qsp['filter'] = json.dumps([{"property": "last", "value": str(starttime), "op": ">="}])
 
-        queryResult = client.SppAPI(session, '').get(path='/api/endeavour/alert/message', params=qsp)
-        #queryResult = client.SppAPI(session, '').get(path='/api/endeavour/alert/message')
+        queryResult = client.SppAPI(session, 'endeavour').get(path='/alert/message', params=qsp)
     except requests.exceptions.HTTPError as err:
         print("HTTP Error: {0}".format(err))
         spputil.get_error_details(err)

@@ -44,6 +44,7 @@ resource_to_endpoint = {
     'oracle': 'api/application/oracle',
     'file': 'api/application/file',
     'sql': 'api/application/sql',
+    'exch': 'api/application/exch',    
     'sppsla': 'ngp/slapolicy',
     'site': 'site',
     'appserver': 'ngp/appserver',
@@ -1037,6 +1038,30 @@ class SqlAPI(SppAPI):
         return self.spp_session.post(data=data, path='ngp/application?action=adhoc')
 
 
+class ExchangeAPI(SppAPI):
+    def __init__(self, spp_session):
+        super(ExchangeAPI, self).__init__(spp_session, 'exch')
+
+    def get_instances(self):
+        return self.get(path="/instance?from=recovery")
+
+    def get_instance(self, instances, name):
+        for inst in instances:
+            if inst['name'] == name:
+                return inst
+
+    def get_database(self, databases, name):
+        for db in databases:
+            if db['name'] == name:
+                return db
+
+    def get_databases_in_instance(self, instanceid):
+        return self.get(path="instance/%s/database" % instanceid)
+    
+    def get_database_copy_versions(self, instanceid, databaseid):
+        return self.get(path="instance/%s/database/%s" % (instanceid, databaseid) + '/version?from=recovery&sort=[{"property": "protectionTime", "direction": "DESC"}]')
+
+
 class slaAPI(SppAPI):
     def __init__(self, spp_session):
         super(slaAPI, self).__init__(spp_session, 'sppsla')
@@ -1164,6 +1189,64 @@ class slaAPI(SppAPI):
                             "wormProtected": False
                         }
                 }
+                ]
+            }
+        }
+        resp = self.post(data=slainfo)
+        return resp
+
+
+    def create_replication_cloud_sla(self, name, cloud_server, site_backup="Primary", site_replication="Secondary", offload_source="backup", archive_source="backup"):
+        slainfo = {
+            "name": name,
+            "version": "1.0",
+            "spec": {
+                "simple": True,
+                "subpolicy": [{
+                    "type": "REPLICATION",
+                    "software": True,
+                    "retention": {
+                            "age": 15
+                    },
+                    "useEncryption": False,
+                    "trigger": {},
+                    "site": site_backup
+                },
+                 {
+                        "type": "REPLICATION",
+                        "retention": {},
+                        "useEncryption": False,
+                        "software": False,
+                        "trigger": {},
+                        "site": site_replication
+                    },
+
+                    {
+                        "type": "SPPOFFLOAD",
+                        "retention": {},
+                        "trigger": {},
+                        "source": offload_source,
+                        "target": {
+                            "href": cloud_server['links']['self']['href'],
+                            "resourceType": cloud_server['provider'],
+                            "id": cloud_server['id'],
+                            "wormProtected": False
+                        }
+                },
+                    {
+                        "type": "SPPARCHIVE",
+                        "retention": {
+                            "age": 90
+                        },
+                        "trigger": {},
+                        "source": archive_source,
+                        "target": {
+                            "href": cloud_server['links']['self']['href'],
+                            "resourceType": cloud_server['provider'],
+                            "id": "4",
+                            "wormProtected": False
+                        }
+                    }
                 ]
             }
         }
@@ -1736,6 +1819,136 @@ class restoreAPI(SppAPI):
         }
 
         return self.spp_session.post(data=restore, path='ngp/application?action=restore')['response']
+
+    def restore_exchange(self, database_href, version_href, version_copy_href, protection_time, database_name,
+                         restore_instance_version, restore_instance_id, database_id, location, mode, database_restore_name="", post_guest=None,):
+        restore = {
+            "subType": "exch",
+            "script": {
+                "preGuest": None,
+                "postGuest": post_guest,
+                "continueScriptsOnError": False
+            },
+            "spec": {
+                "source": [
+                {
+                    "href": database_href,
+                    "resourceType": "database",
+                    "include": True,
+                    "version": {
+                        "href": version_href,
+                        "copy": {
+                            "href": version_copy_href
+                        },
+                    "metadata": {
+                        "useLatest": False,
+                        "protectionTime": protection_time
+                    }
+                    },
+                    "metadata": {
+                        "name": database_name,
+                        "location" : location,
+                        "instanceVersion": restore_instance_version,
+                        "instanceId": restore_instance_id,
+                        "useLatest": False
+                    },
+                    "id": database_id
+                }
+                ],
+                "subpolicy": [
+                {
+                    "type": "restore",
+                    "mode": mode,
+                    "destination": {
+                        "mapdatabase": {
+                            database_href: {
+                            "name": database_restore_name,
+                            "paths": [
+                                {
+                                "source": f"C:\\Program Files\\Microsoft\\Exchange Server\\V15\\Mailbox\\{database_name}\\{database_name}.edb",
+                                "destination": "",
+                                "mountPoint": f"C:\\Program Files\\Microsoft\\Exchange Server\\V15\\Mailbox\\{database_name}\\{database_name}.edb",
+                                "fileType" : "DATA"
+                                },
+                                {
+                                "source": f"C:\\Program Files\\Microsoft\\Exchange Server\\V15\\Mailbox\\{database_name}",
+                                "destination": "",
+                                "mountPoint": f"C:\\Program Files\\Microsoft\\Exchange Server\\V15\\Mailbox\\{database_name}",
+                                "fileType" : "LOGS"
+                                }
+                            ]
+                            }
+                        },
+                    "targetLocation": "original"
+                    },
+                    "option": {
+                    "autocleanup": True,
+                    "applicationOption": {
+                        "overwriteExistingDb": False,
+                        "recoveryType": "recovery",
+                        "maxParallelStreams": 1
+                    }
+                    },
+                    "source": None
+                }
+                ],
+                "view": "applicationview",
+            }
+        }
+        return self.spp_session.post(data=restore, path='ngp/application?action=restore')['response']
+
+
+    def restore_exchange_instant_access(self, database_href, version_href, version_copy_href, protection_time,
+                       database_name, restore_instance_version, restore_instance_id, database_id):
+        restore = {
+            "subType": "exch",
+            "script": {
+                "preGuest": None,
+                "postGuest": None,
+                "continueScriptsOnError": False
+            },
+            "spec": {
+                "source": [{
+                    "href": database_href,
+                    "resourceType": "database",
+                    "include": True,
+                    "version": {
+                        "href": version_href,
+                        "copy": {
+                            "href": version_copy_href
+                        },
+                        "metadata": {
+                            "useLatest": False,
+                            "protectionTime": protection_time
+                        }
+                    },
+                    "metadata": {
+                        "name": database_name,
+                        "instanceVersion": restore_instance_version,
+                        "instanceId": restore_instance_id,
+                        "useLatest": False
+                    },
+                    "id": database_id
+                }],
+                "subpolicy": [{
+                    "type": "IA",
+                    "mode": "IA",
+                    "destination": {
+                        "targetLocation": "original"
+                    },
+                    "option": {
+                        "autocleanup": True,
+                        "allowsessoverwrite": True,
+                        "continueonerror": True,
+                    },
+                    "source": None
+                }],
+                "view": "applicationview"
+            }
+        }
+
+        return self.spp_session.post(data=restore, path='ngp/application?action=restore')['response']
+
 
     def restore_vm_clone(self, subType, vm_href, vm_name, vm_id, vm_version, vm_clone_name, streaming=True):
         restore = {
