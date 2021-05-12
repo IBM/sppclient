@@ -1722,6 +1722,68 @@ class restoreAPI(SppAPI):
         
         return self.spp_session.post(data=restore, path='ngp/hypervisor?action=restore')['response']
 
+    def restore_vmware_vdisks(self, vdisks):
+        temp_sources = []
+        for disk in vdisks:
+            temp_src = {}
+            temp_src['include'] = True
+            temp_src['resourceType'] = "vdisk"
+            temp_src['href'] = disk['links']['self']['href'].replace('hlo', 'recovery')
+            temp_src['id'] = disk['id']
+            temp_src['metadata'] = {}
+            temp_src['metadata']['name'] = disk['name']
+
+            link_to_latest_version = disk['links']['latestversion']['href']
+
+            link_to_latest_version_formatted = "api/" + link_to_latest_version.split("/api/")[-1]
+            latest_version = self.spp_session.get(path=link_to_latest_version_formatted)
+            link_to_copies_formatted = "api/" + latest_version['links']['copies']['href'].split("/api/")[-1]
+            copies = self.spp_session.get(path=link_to_copies_formatted)['copies']
+            latest_copy = copies[0]
+            temp_src['version'] = {}
+            temp_src['version']['copy'] = {}
+            temp_src['version']['href'] = link_to_latest_version.replace('hlo', 'recovery')
+            temp_src['metadata']['protectionTime'] = latest_version['protectionInfo']['protectionTime']
+            temp_src['metadata']['useLatest'] = False
+            temp_src['version']['copy']['href'] = latest_copy['links']['self']['href'].replace('hlo', 'recovery')
+
+            temp_sources.append(temp_src)
+
+        body = {
+            "script": {
+                "continueScriptsOnError": False,
+                "postGuest": None,
+                "preGuest": None
+            },
+            "spec": {
+                "metadata": {},
+                "source": temp_sources,
+                "subpolicy": [
+                    {
+                        "destination": {},
+                        "option": {
+                            "allowsessoverwrite": True,
+                            "allowvmoverwrite": False,
+                            "autocleanup": True,
+                            "continueonerror": True,
+                            "diskReplace": False,
+                            "IR": False,
+                            "mode": "test",
+                            "poweron": False,
+                            "protocolpriority": "iSCSI",
+                            "restorevmtag": True,
+                            "streaming": False,
+                            "vmscripts": False
+                        },
+                        "source": None,
+                        "type": "IA"
+                    }
+                ]
+            },
+            "subType": "vmware"
+        }
+        return self.spp_session.post(data=body, path='ngp/hypervisor?action=restore')['response']
+
     def restoreHyperV(self, subType, hyperv_href, hyperv_name, hyperv_id, hyperv_version, site_href, vm_overwrite=False, poweron=False):
         restore = {"subType": subType,
                    "spec": {
