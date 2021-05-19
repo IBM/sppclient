@@ -5,6 +5,7 @@ import tempfile
 import time
 import logging
 import traceback
+import datetime
 from spplib.sdk import system
 
 import requests
@@ -824,14 +825,20 @@ class FileSystemAPI(SppAPI):
         
         return fails, response
 
-    def get_instances(self, page_size=100):
+    def get_instances(self, page_size=100, recovery=False):
         params = {
             "from": "hlo",
-            "pageSize": page_size,
+            # "pageSize": page_size,
             "sort": '[{"property":"name","direction":"ASC"}]'
         }
 
+        if recovery:
+            params["from"] = "recovery"
+
         return self.get(path='instance', params=params)['instances']
+
+    def get_recovery_source(self, instanceid):
+        return self.get(path="instance/%s/applicationview?from=recovery" % (instanceid))
 
     def get_disks_in_instance(self, instanceid):
         return self.get(path="instance/%s/database?from=hlo" % instanceid)
@@ -1946,6 +1953,77 @@ class restoreAPI(SppAPI):
 
         return self.spp_session.post(data=restore, path='ngp/application?action=restore')['response']
 
+    def restore_file_system_disk(self, instance, source, version, copy, scripts=None):
+        if scripts is None:
+            scripts = {
+                "preGuest": None,
+                "postGuest": None,
+                "continueScriptsOnError": False
+            }
+
+        date = datetime.datetime.fromtimestamp(
+            version["protectionInfo"]["protectionTime"]/1000).strftime("%b %d, %Y %I:%M:%S %p")
+        metadata = {
+            "sourceType": "Windows, Linux",
+            "selectedSource": [version["name"]],
+            "sourceSnapshot": [version["name"] + " - " + date],
+            "autocleanupOnJobFailure": True,
+            "continueScriptsOnError": False
+        }
+            
+        source = [{
+            "href": source["links"]["self"]["href"],
+            "resourceType": source["resourceType"],
+            "include": True,
+            "version": {
+                "href": f"{version['links']['self']['href']}?from=recovery&embedCopies=true&omitIfNoCopies=true",
+                "copy": {
+                    "href": copy['links']['self']['href'],
+                },
+                "metadata": {
+                    "useLatest": False,
+                    "protectionTime": version["protectionInfo"]["protectionTime"]
+                }
+            },
+            "metadata": {
+                "name": source["name"],
+                "location": source["location"],
+                "instanceVersion": instance["version"],
+                "instanceId": instance["id"],
+                "useLatest": False
+            },
+            "id": source["id"]
+        }]
+
+        data = {
+            "subType": "file",
+            "script": scripts,
+            "spec": {
+                "source": source,
+                "subpolicy": [{
+                    "type": "restore",
+                    "mode": "granular",
+                    "destination": {
+                        "targetLocation": "original"
+                    },
+                    "option": {
+                        "autocleanup": True,
+                        "allowsessoverwrite": True,
+                        "continueonerror": True,
+                        "mountPathPrefix": "",
+                        "applicationOption": {
+                            "overwriteExistingDb": False,
+                            "recoveryType": "recovery"
+                        }
+                    },
+                    "source": None
+                }],
+                "view": "applicationview",
+		        "metadata": metadata
+            }
+        }
+
+        return self.post(params={"action": "restore"}, data=data)['response']
 
     def restore_vm_clone(self, subType, vm_href, vm_name, vm_id, vm_version, vm_clone_name, streaming=True):
         restore = {
