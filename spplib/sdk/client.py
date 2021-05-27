@@ -5,6 +5,7 @@ import tempfile
 import time
 import logging
 import traceback
+import datetime
 from spplib.sdk import system
 
 import requests
@@ -44,6 +45,7 @@ resource_to_endpoint = {
     'oracle': 'api/application/oracle',
     'file': 'api/application/file',
     'sql': 'api/application/sql',
+    'exch': 'api/application/exch',    
     'sppsla': 'ngp/slapolicy',
     'site': 'site',
     'appserver': 'ngp/appserver',
@@ -93,6 +95,12 @@ def build_url(baseurl, restype=None, resid=None, path=None, endpoint=None):
         if not path.startswith('/'):
             path = '/' + path
         url = url + path
+
+    def replace_double_slash(url, old, new, occurrence):
+        li = url.rsplit(old, occurrence)
+        return new.join(li)
+ 
+    url = replace_double_slash(url, '//', '/', url.count('//') - 1)
 
     return url.replace("/api/ngp", "/ngp")
 
@@ -758,6 +766,80 @@ class FileSystemAPI(SppAPI):
     def __init__(self, spp_session):
         super(FileSystemAPI, self).__init__(spp_session, 'file')
 
+    def register(self, file_server_data):
+        data = {
+            "hostAddress": file_server_data["host_address"],
+            "username": file_server_data["username"],
+            "password": file_server_data["password"],
+            "osType":"windows",
+            "applicationType":"file",
+            "addToCatJob":True,
+            "script":False,
+            "application":True,
+            "useForAllInstances":False,
+            "opProperties":
+                {   
+                    "maxConcurrency":10
+                }
+        }
+
+        file_system_config = self.spp_session.post(path=resource_to_endpoint['appserver'], data=data)
+
+        while True:
+            time.sleep(5)
+
+            jobs = self.spp_session.get(path='api/endeavour/job?')['jobs']
+            try:
+                for job in jobs:
+                    if(job['serviceId'] == "serviceprovider.catalog.application"):
+                        status = job['status'] 
+            except:
+                pass
+
+            if status != "RUNNING":
+                break
+
+        return file_system_config 
+
+    def test_connection(self, file_server):
+        data = {
+            "type": "application"
+        }
+
+        response = self.spp_session.post(path='/api/appserver/' + file_server['id'], params={'action': 'test'}, data=data)
+        url = response["statusHref"]
+        is_finished = False 
+
+        # Wait until end of test
+        while is_finished == False:
+            time.sleep(5)
+            response = self.spp_session.get(url=url)
+            is_finished = bool(response["testsComplete"])
+
+        # Collect all non-successfull tests
+        fails = {}
+        for group in response["configGroups"]:
+            for t in group["tests"]:
+                if t["status"] != "SUCCESS":
+                    fails[f"{group['name']} ({group['description']}) - {t['name']} ({t['description']})"] = t["status"]
+        
+        return fails, response
+
+    def get_instances(self, page_size=100, recovery=False):
+        params = {
+            "from": "hlo",
+            # "pageSize": page_size,
+            "sort": '[{"property":"name","direction":"ASC"}]'
+        }
+
+        if recovery:
+            params["from"] = "recovery"
+
+        return self.get(path='instance', params=params)['instances']
+
+    def get_recovery_source(self, instanceid):
+        return self.get(path="instance/%s/applicationview?from=recovery" % (instanceid))
+
     def get_disks_in_instance(self, instanceid):
         return self.get(path="instance/%s/database?from=hlo" % instanceid)
 
@@ -963,6 +1045,30 @@ class SqlAPI(SppAPI):
         return self.spp_session.post(data=data, path='ngp/application?action=adhoc')
 
 
+class ExchangeAPI(SppAPI):
+    def __init__(self, spp_session):
+        super(ExchangeAPI, self).__init__(spp_session, 'exch')
+
+    def get_instances(self):
+        return self.get(path="/instance?from=recovery")
+
+    def get_instance(self, instances, name):
+        for inst in instances:
+            if inst['name'] == name:
+                return inst
+
+    def get_database(self, databases, name):
+        for db in databases:
+            if db['name'] == name:
+                return db
+
+    def get_databases_in_instance(self, instanceid):
+        return self.get(path="instance/%s/database" % instanceid)
+    
+    def get_database_copy_versions(self, instanceid, databaseid):
+        return self.get(path="instance/%s/database/%s" % (instanceid, databaseid) + '/version?from=recovery&sort=[{"property": "protectionTime", "direction": "DESC"}]')
+
+
 class slaAPI(SppAPI):
     def __init__(self, spp_session):
         super(slaAPI, self).__init__(spp_session, 'sppsla')
@@ -1090,6 +1196,64 @@ class slaAPI(SppAPI):
                             "wormProtected": False
                         }
                 }
+                ]
+            }
+        }
+        resp = self.post(data=slainfo)
+        return resp
+
+
+    def create_replication_cloud_sla(self, name, cloud_server, site_backup="Primary", site_replication="Secondary", offload_source="backup", archive_source="backup"):
+        slainfo = {
+            "name": name,
+            "version": "1.0",
+            "spec": {
+                "simple": True,
+                "subpolicy": [{
+                    "type": "REPLICATION",
+                    "software": True,
+                    "retention": {
+                            "age": 15
+                    },
+                    "useEncryption": False,
+                    "trigger": {},
+                    "site": site_backup
+                },
+                 {
+                        "type": "REPLICATION",
+                        "retention": {},
+                        "useEncryption": False,
+                        "software": False,
+                        "trigger": {},
+                        "site": site_replication
+                    },
+
+                    {
+                        "type": "SPPOFFLOAD",
+                        "retention": {},
+                        "trigger": {},
+                        "source": offload_source,
+                        "target": {
+                            "href": cloud_server['links']['self']['href'],
+                            "resourceType": cloud_server['provider'],
+                            "id": cloud_server['id'],
+                            "wormProtected": False
+                        }
+                },
+                    {
+                        "type": "SPPARCHIVE",
+                        "retention": {
+                            "age": 90
+                        },
+                        "trigger": {},
+                        "source": archive_source,
+                        "target": {
+                            "href": cloud_server['links']['self']['href'],
+                            "resourceType": cloud_server['provider'],
+                            "id": "4",
+                            "wormProtected": False
+                        }
+                    }
                 ]
             }
         }
@@ -1660,6 +1824,207 @@ class restoreAPI(SppAPI):
 
         return self.spp_session.post(data=restore, path='ngp/application?action=restore')['response']
 
+    def restore_exchange(self, database_href, version_href, version_copy_href, protection_time, database_name,
+                         restore_instance_version, restore_instance_id, database_id, location, mode, database_restore_name="", post_guest=None,):
+        restore = {
+            "subType": "exch",
+            "script": {
+                "preGuest": None,
+                "postGuest": post_guest,
+                "continueScriptsOnError": False
+            },
+            "spec": {
+                "source": [
+                {
+                    "href": database_href,
+                    "resourceType": "database",
+                    "include": True,
+                    "version": {
+                        "href": version_href,
+                        "copy": {
+                            "href": version_copy_href
+                        },
+                    "metadata": {
+                        "useLatest": False,
+                        "protectionTime": protection_time
+                    }
+                    },
+                    "metadata": {
+                        "name": database_name,
+                        "location" : location,
+                        "instanceVersion": restore_instance_version,
+                        "instanceId": restore_instance_id,
+                        "useLatest": False
+                    },
+                    "id": database_id
+                }
+                ],
+                "subpolicy": [
+                {
+                    "type": "restore",
+                    "mode": mode,
+                    "destination": {
+                        "mapdatabase": {
+                            database_href: {
+                            "name": database_restore_name,
+                            "paths": [
+                                {
+                                "source": f"C:\\Program Files\\Microsoft\\Exchange Server\\V15\\Mailbox\\{database_name}\\{database_name}.edb",
+                                "destination": "",
+                                "mountPoint": f"C:\\Program Files\\Microsoft\\Exchange Server\\V15\\Mailbox\\{database_name}\\{database_name}.edb",
+                                "fileType" : "DATA"
+                                },
+                                {
+                                "source": f"C:\\Program Files\\Microsoft\\Exchange Server\\V15\\Mailbox\\{database_name}",
+                                "destination": "",
+                                "mountPoint": f"C:\\Program Files\\Microsoft\\Exchange Server\\V15\\Mailbox\\{database_name}",
+                                "fileType" : "LOGS"
+                                }
+                            ]
+                            }
+                        },
+                    "targetLocation": "original"
+                    },
+                    "option": {
+                    "autocleanup": True,
+                    "applicationOption": {
+                        "overwriteExistingDb": False,
+                        "recoveryType": "recovery",
+                        "maxParallelStreams": 1
+                    }
+                    },
+                    "source": None
+                }
+                ],
+                "view": "applicationview",
+            }
+        }
+        return self.spp_session.post(data=restore, path='ngp/application?action=restore')['response']
+
+
+    def restore_exchange_instant_access(self, database_href, version_href, version_copy_href, protection_time,
+                       database_name, restore_instance_version, restore_instance_id, database_id):
+        restore = {
+            "subType": "exch",
+            "script": {
+                "preGuest": None,
+                "postGuest": None,
+                "continueScriptsOnError": False
+            },
+            "spec": {
+                "source": [{
+                    "href": database_href,
+                    "resourceType": "database",
+                    "include": True,
+                    "version": {
+                        "href": version_href,
+                        "copy": {
+                            "href": version_copy_href
+                        },
+                        "metadata": {
+                            "useLatest": False,
+                            "protectionTime": protection_time
+                        }
+                    },
+                    "metadata": {
+                        "name": database_name,
+                        "instanceVersion": restore_instance_version,
+                        "instanceId": restore_instance_id,
+                        "useLatest": False
+                    },
+                    "id": database_id
+                }],
+                "subpolicy": [{
+                    "type": "IA",
+                    "mode": "IA",
+                    "destination": {
+                        "targetLocation": "original"
+                    },
+                    "option": {
+                        "autocleanup": True,
+                        "allowsessoverwrite": True,
+                        "continueonerror": True,
+                    },
+                    "source": None
+                }],
+                "view": "applicationview"
+            }
+        }
+
+        return self.spp_session.post(data=restore, path='ngp/application?action=restore')['response']
+
+    def restore_file_system_disk(self, instance, source, version, copy, scripts=None):
+        if scripts is None:
+            scripts = {
+                "preGuest": None,
+                "postGuest": None,
+                "continueScriptsOnError": False
+            }
+
+        date = datetime.datetime.fromtimestamp(
+            version["protectionInfo"]["protectionTime"]/1000).strftime("%b %d, %Y %I:%M:%S %p")
+        metadata = {
+            "sourceType": "Windows, Linux",
+            "selectedSource": [version["name"]],
+            "sourceSnapshot": [version["name"] + " - " + date],
+            "autocleanupOnJobFailure": True,
+            "continueScriptsOnError": False
+        }
+            
+        source = [{
+            "href": source["links"]["self"]["href"],
+            "resourceType": source["resourceType"],
+            "include": True,
+            "version": {
+                "href": f"{version['links']['self']['href']}?from=recovery&embedCopies=true&omitIfNoCopies=true",
+                "copy": {
+                    "href": copy['links']['self']['href'],
+                },
+                "metadata": {
+                    "useLatest": False,
+                    "protectionTime": version["protectionInfo"]["protectionTime"]
+                }
+            },
+            "metadata": {
+                "name": source["name"],
+                "location": source["location"],
+                "instanceVersion": instance["version"],
+                "instanceId": instance["id"],
+                "useLatest": False
+            },
+            "id": source["id"]
+        }]
+
+        data = {
+            "subType": "file",
+            "script": scripts,
+            "spec": {
+                "source": source,
+                "subpolicy": [{
+                    "type": "restore",
+                    "mode": "granular",
+                    "destination": {
+                        "targetLocation": "original"
+                    },
+                    "option": {
+                        "autocleanup": True,
+                        "allowsessoverwrite": True,
+                        "continueonerror": True,
+                        "mountPathPrefix": "",
+                        "applicationOption": {
+                            "overwriteExistingDb": False,
+                            "recoveryType": "recovery"
+                        }
+                    },
+                    "source": None
+                }],
+                "view": "applicationview",
+		        "metadata": metadata
+            }
+        }
+
+        return self.post(params={"action": "restore"}, data=data)['response']
+
     def restore_vm_clone(self, subType, vm_href, vm_name, vm_id, vm_version, vm_clone_name, streaming=True):
         restore = {
             "subType": subType,
@@ -2201,7 +2566,7 @@ class restoreAPI(SppAPI):
                                    "isOffload": None}}}], "view": "applicationview"}}
         return self.spp_session.post(data=restore, path='ngp/application?action=restore')['response']
 
-    def restore_vm_production(self, hv_type, hv_href, hv_name, hv_id, hv_version, site_href, streaming=True):
+    def restore_vm_production(self, hv_type, hv_href, hv_name, hv_id, hv_version, site_href, streaming=True, restore_mode="recovery"):
         data = {
             "subType": hv_type,
             "spec": {
@@ -2247,7 +2612,7 @@ class restoreAPI(SppAPI):
                             "autocleanup": True,
                             "allowsessoverwrite": True,
                             "restorevmtag": None,
-                            "mode": "recovery",
+                            "mode": restore_mode,
                             "vmscripts": False,
                             "protocolpriority": "iSCSI",
                             "IR": False,
@@ -2265,8 +2630,8 @@ class restoreAPI(SppAPI):
 
         return self.spp_session.post(data=data, path='ngp/hypervisor?action=restore')['response']
 
-    def restore_ec2_clone(self, hyperv_href, hyperv_name, hyperv_id, hyperv_version_href, hyperv_copy_href,
-                          hyperv_copy_time, restore_hyperv_name):
+    def restore_ec2(self, hyperv_href, hyperv_name, hyperv_id, hyperv_version_href, hyperv_copy_href,
+                          hyperv_copy_time, restore_hyperv_name, restore_mode="clone"):
 
         data = {
             "subType": "awsec2",
@@ -2314,7 +2679,7 @@ class restoreAPI(SppAPI):
                             "autocleanup": True,
                             "allowsessoverwrite": True,
                             "restorevmtag": True,
-                            "mode": "clone",
+                            "mode": restore_mode,
                             "vmscripts": False,
                             "protocolpriority": "iSCSI",
                             "IR": False,

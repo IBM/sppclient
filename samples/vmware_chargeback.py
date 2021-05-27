@@ -37,7 +37,7 @@ def prettyprint(indata):
 
 def get_successful_vm_info():
     try:
-        path = "/catalog/recovery/hypervisorvm?embed=%28children%28properties%29%29"
+        path = "/catalog/recovery/hypervisorvm?embed=%28children%28properties%29%29&pageSize=100000"
         info = client.SppAPI(session, 'endeavour').get(path=path)
         return info['children']
     except Exception as e:

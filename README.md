@@ -42,11 +42,11 @@ To interact with SPP API:
 $ python3 script.py -h (This command provides a list of input parameters needed to run the script)
 
 
-$ python3 createsite.py --host="https://x.x.x.x:8443" --user="admin" --pass="password" --sitename="samplesite" --sitedesc="This is a sample site"
+$ python3 createsite.py --host="https://x.x.x.x" --user="admin" --pass="password" --sitename="samplesite" --sitedesc="This is a sample site"
 
 
 
-$ python3 runjob.py --host="https://x.x.x.x:8443" --user="admin" --pass="password" --jobname="samplejob"
+$ python3 runjob.py --host="https://x.x.x.x" --user="admin" --pass="password" --jobname="samplejob"
 
 
 
