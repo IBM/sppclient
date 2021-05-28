@@ -1430,7 +1430,7 @@ class restoreAPI(SppAPI):
         return self.spp_session.post(data=restore, path='ngp/application?action=restore')['response']
 
     def restore_sql_production(self, database_href, version_href, version_copy_href, protection_time, database_name,
-                         restore_instance_version, restore_instance_id, database_id, destination_path1, destination_path2, database_restore_name="", post_guest=None):
+                         restore_instance_version, restore_instance_id, database_id, destination_path1, destination_path2, database_restore_name="", post_guest=None, overwrite_db=False):
 
         restore = {
             "subType": "sql",
@@ -1489,7 +1489,7 @@ class restoreAPI(SppAPI):
                         "allowsessoverwrite": True,
                         "continueonerror": True,
                         "applicationOption": {
-                            "overwriteExistingDb": False,
+                            "overwriteExistingDb": overwrite_db,
                             "recoveryType": "recovery",
                             "maxParallelStreams": 1
                         }
