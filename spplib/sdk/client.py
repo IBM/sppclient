@@ -766,23 +766,7 @@ class FileSystemAPI(SppAPI):
     def __init__(self, spp_session):
         super(FileSystemAPI, self).__init__(spp_session, 'file')
 
-    def register(self, file_server_data):
-        data = {
-            "hostAddress": file_server_data["host_address"],
-            "username": file_server_data["username"],
-            "password": file_server_data["password"],
-            "osType":"windows",
-            "applicationType":"file",
-            "addToCatJob":True,
-            "script":False,
-            "application":True,
-            "useForAllInstances":False,
-            "opProperties":
-                {   
-                    "maxConcurrency":10
-                }
-        }
-
+    def register(self, data):
         file_system_config = self.spp_session.post(path=resource_to_endpoint['appserver'], data=data)
 
         while True:
@@ -801,12 +785,12 @@ class FileSystemAPI(SppAPI):
 
         return file_system_config 
 
-    def test_connection(self, file_server):
+    def test_connection(self, file_server_id):
         data = {
             "type": "application"
         }
 
-        response = self.spp_session.post(path='/api/appserver/' + file_server['id'], params={'action': 'test'}, data=data)
+        response = self.spp_session.post(path='/api/appserver/' +  file_server_id, params={'action': 'test'}, data=data)
         url = response["statusHref"]
         is_finished = False 
 
@@ -825,10 +809,9 @@ class FileSystemAPI(SppAPI):
         
         return fails, response
 
-    def get_instances(self, page_size=100, recovery=False):
+    def get_instances(self, recovery=False):
         params = {
             "from": "hlo",
-            # "pageSize": page_size,
             "sort": '[{"property":"name","direction":"ASC"}]'
         }
 
