@@ -884,7 +884,7 @@ class VmwareAPI(SppAPI):
     def get_database_copy_versions(self, instanceid, databaseid):
         return self.get(path="oraclehome/%s/database/%s" % (instanceid, databaseid) + "/version")
 
-    def apply_options(self, subtype, resource_href, vm_id, metadataPath, username, password):
+    def apply_options(self, subtype, resource_href, vm_id, metadataPath, username, password, enable_file_indexing=True):
 
         applyoptionsdata = {
             "subtype": subtype,
@@ -900,7 +900,7 @@ class VmwareAPI(SppAPI):
                 "proxySelection": "",
                 "skipReadonlyDS": True,
                 "skipIAMounts": True,
-                "enableFH": True,
+                "enableFH": enable_file_indexing,
                 "enableLogTruncate": False,
                 "username": username,
                 "password": password
