@@ -40,7 +40,7 @@ resource_to_endpoint = {
     'user': 'security/user',
     'resourcepool': 'security/resourcepool',
     'role': 'security/role',
-    'identityuser': 'identity/user',
+    'identityuser': 'api/identity/user',
     'identitycredential': 'identity/user',
     'oracle': 'api/application/oracle',
     'file': 'api/application/file',
@@ -607,6 +607,9 @@ class UserIdentityAPI(SppAPI):
 
     def create(self, data):
         return self.post(data=data)
+
+    def delete(self, identity_id):
+        return self.spp_session.delete(path='api/identity/user/' + identity_id)
 
 
 class AppserverAPI(SppAPI):
