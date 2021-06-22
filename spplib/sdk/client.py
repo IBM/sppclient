@@ -1852,15 +1852,15 @@ class restoreAPI(SppAPI):
                             "name": database_restore_name,
                             "paths": [
                                 {
-                                "source": f"C:\\Program Files\\Microsoft\\Exchange Server\\V15\\Mailbox\\{database_name}\\{database_name}.edb",
+                                "source": f"D:\\{database_name}\\{database_name}.edb",
                                 "destination": "",
-                                "mountPoint": f"C:\\Program Files\\Microsoft\\Exchange Server\\V15\\Mailbox\\{database_name}\\{database_name}.edb",
+                                "mountPoint": f"D:\\{database_name}\\{database_name}.edb",
                                 "fileType" : "DATA"
                                 },
                                 {
-                                "source": f"C:\\Program Files\\Microsoft\\Exchange Server\\V15\\Mailbox\\{database_name}",
+                                "source": f"L:\\{database_name}",
                                 "destination": "",
-                                "mountPoint": f"C:\\Program Files\\Microsoft\\Exchange Server\\V15\\Mailbox\\{database_name}",
+                                "mountPoint": f"L:\\{database_name}",
                                 "fileType" : "LOGS"
                                 }
                             ]
