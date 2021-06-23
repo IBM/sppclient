@@ -769,23 +769,7 @@ class FileSystemAPI(SppAPI):
     def __init__(self, spp_session):
         super(FileSystemAPI, self).__init__(spp_session, 'file')
 
-    def register(self, file_server_data):
-        data = {
-            "hostAddress": file_server_data["host_address"],
-            "username": file_server_data["username"],
-            "password": file_server_data["password"],
-            "osType":"windows",
-            "applicationType":"file",
-            "addToCatJob":True,
-            "script":False,
-            "application":True,
-            "useForAllInstances":False,
-            "opProperties":
-                {   
-                    "maxConcurrency":10
-                }
-        }
-
+    def register(self, data):
         file_system_config = self.spp_session.post(path=resource_to_endpoint['appserver'], data=data)
 
         while True:
@@ -804,12 +788,12 @@ class FileSystemAPI(SppAPI):
 
         return file_system_config 
 
-    def test_connection(self, file_server):
+    def test_connection(self, file_server_id):
         data = {
             "type": "application"
         }
 
-        response = self.spp_session.post(path='/api/appserver/' + file_server['id'], params={'action': 'test'}, data=data)
+        response = self.spp_session.post(path='/api/appserver/' +  file_server_id, params={'action': 'test'}, data=data)
         url = response["statusHref"]
         is_finished = False 
 
@@ -828,10 +812,9 @@ class FileSystemAPI(SppAPI):
         
         return fails, response
 
-    def get_instances(self, page_size=100, recovery=False):
+    def get_instances(self, recovery=False):
         params = {
             "from": "hlo",
-            # "pageSize": page_size,
             "sort": '[{"property":"name","direction":"ASC"}]'
         }
 
@@ -904,7 +887,7 @@ class VmwareAPI(SppAPI):
     def get_database_copy_versions(self, instanceid, databaseid):
         return self.get(path="oraclehome/%s/database/%s" % (instanceid, databaseid) + "/version")
 
-    def apply_options(self, subtype, resource_href, vm_id, metadataPath, username, password):
+    def apply_options(self, subtype, resource_href, vm_id, metadataPath, username, password, enable_file_indexing=True):
 
         applyoptionsdata = {
             "subtype": subtype,
@@ -920,7 +903,7 @@ class VmwareAPI(SppAPI):
                 "proxySelection": "",
                 "skipReadonlyDS": True,
                 "skipIAMounts": True,
-                "enableFH": True,
+                "enableFH": enable_file_indexing,
                 "enableLogTruncate": False,
                 "username": username,
                 "password": password
@@ -1872,15 +1855,15 @@ class restoreAPI(SppAPI):
                             "name": database_restore_name,
                             "paths": [
                                 {
-                                "source": f"C:\\Program Files\\Microsoft\\Exchange Server\\V15\\Mailbox\\{database_name}\\{database_name}.edb",
+                                "source": f"D:\\{database_name}\\{database_name}.edb",
                                 "destination": "",
-                                "mountPoint": f"C:\\Program Files\\Microsoft\\Exchange Server\\V15\\Mailbox\\{database_name}\\{database_name}.edb",
+                                "mountPoint": f"D:\\{database_name}\\{database_name}.edb",
                                 "fileType" : "DATA"
                                 },
                                 {
-                                "source": f"C:\\Program Files\\Microsoft\\Exchange Server\\V15\\Mailbox\\{database_name}",
+                                "source": f"L:\\{database_name}",
                                 "destination": "",
-                                "mountPoint": f"C:\\Program Files\\Microsoft\\Exchange Server\\V15\\Mailbox\\{database_name}",
+                                "mountPoint": f"L:\\{database_name}",
                                 "fileType" : "LOGS"
                                 }
                             ]
