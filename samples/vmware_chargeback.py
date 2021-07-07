@@ -58,7 +58,10 @@ def parse_successful_vm_info(vms):
     for vm in vms:
         if vm['properties']['hypervisorType'] != "vmware":
             continue
-        versions = get_vm_versions(vm['links']['versions']['href'])
+        try:
+            versions = get_vm_versions(vm['links']['versions']['href'])
+        except:
+            continue
         vminfo['vm'] = vm['name']
         vminfo['tags'] = ""
         for tag in vm['properties']['tags']:
