@@ -29,9 +29,9 @@ except ImportError:
 urllib3.disable_warnings()
 
 parser = OptionParser()
-parser.add_option("--host", dest="hostname", help="Spectrum Protect Plus host IP or DNS")
-parser.add_option("--user", dest="username", help="username")
-parser.add_option("--pass", dest="password", help="password")
+parser.add_option("--host", dest="hostname", help="IBM Spectrum Protect Plus host IP or DNS")
+parser.add_option("--user", dest="username", help="IBM Spectrum Protect Plus username")
+parser.add_option("--pass", dest="password", help="IBM Spectrum Protect Plus password")
 parser.add_option("--vm", 	dest="vmname", help="VM display name; can use wildcard with quotes")
 parser.add_option("--verbose", dest="verbose", help="verbose output", action="store_true")
 parser.add_option("--totals", dest="totals", help="print totals", action="store_true")
@@ -133,19 +133,6 @@ def get_vm_versions(vm_ids):
     				print(func_name + "Found: " + timestamp.strftime('%Y-%m-%d %H:%M:%S') + ": " + rtype)
     				
     		print(f"{timestamp.strftime('%Y-%m-%d %H:%M:%S') : <20} {recovery_copy[0] : <7} {recovery_copy[1] : <12} {recovery_copy[2] : <15} {recovery_copy[3] : <8}")
-    				
-    			#if rtype == "Object Storage":
-    			#	for ver_mappings in backup_copy['mappings']:
-    			#		#snapshotName = ver_mappings['destination']['snapshotName']
-    			#		snapshotName = ver_mappings['snapshotVersionId']
-    			#		partnerId =   ver_mappings['destination']['offloadPartnerId']
-    			#		s3found = True
-    			#		print (f"{timestamp.strftime('%Y-%m-%d %H:%M:%S') : <20} {snapshotName : <21} {partnerId: <25}")
-    					
-    			#print (f"{timestamp.strftime('%Y-%m-%d %H:%M:%S') : <20} " + recovery_copy[0] + recovery_copy[1] + recovery_copy[2] + recovery_copy[3])
-    					
-    	#if not s3found:
-    	#	print ("No Object Storage recovery points")
     					
     	if (options.totals):
     		print(f"{'>>TOTALS' : <20} {total_copies[0] : <7} {total_copies[1] : <12} {total_copies[2] : <15} {total_copies[3] : <8}")
