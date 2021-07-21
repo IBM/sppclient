@@ -989,9 +989,12 @@ class SqlAPI(SppAPI):
         for inst in instances:
             if inst['name'] == name:
                 return inst
+    def get_database_group(self):
+        return self.get(path="/databasegroup?from=hlo")
 
-    def get_databases_in_instance(self, instanceid):
-        return self.get(path="instance/%s/database" % instanceid)
+    def get_databases_in_instance(self, instanceid, aag=False, params={}):
+        path = "databasegroup" if aag else "instance"
+        return self.get(path=f"{path}/{instanceid}/database", params=params)
 
     def get_database(self, databases, name):
         for db in databases:
@@ -1416,7 +1419,12 @@ class restoreAPI(SppAPI):
         return self.spp_session.post(data=restore, path='ngp/application?action=restore')['response']
 
     def restore_sql_production(self, database_href, version_href, version_copy_href, protection_time, database_name,
-                         restore_instance_version, restore_instance_id, database_id, destination_path1, destination_path2, database_restore_name="", post_guest=None, overwrite_db=False):
+                         restore_instance_version, restore_instance_id, database_id, destination_path1, destination_path2,
+                         database_restore_name="", post_guest=None, overwrite_db=False, aag=False, source1=None, source2=None, 
+                         metadata={}, osType=True, source_metadata_param_value="windows", view="applicationview"):
+                         
+        source1 = "A:\\Program Files\\Microsoft SQL Server\\MSSQL13.MSSQLSERVER\\MSSQL\\Data" if not source1 else source1
+        source2 = "L:\\Program Files\\Microsoft SQL Server\\MSSQL13.MSSQLSERVER\\MSSQL\\Logs" if not source2 else source2
 
         restore = {
             "subType": "sql",
@@ -1442,7 +1450,7 @@ class restoreAPI(SppAPI):
                     },
                     "metadata": {
                         "name": database_name,
-                        "osType": "windows",
+                        "osType" if osType else "location" : source_metadata_param_value,
                         "instanceVersion": restore_instance_version,
                         "instanceId": restore_instance_id,
                         "useLatest": False
@@ -1458,17 +1466,17 @@ class restoreAPI(SppAPI):
                                 "name": database_restore_name,
                                 "paths": [
                                     {
-                                        "source": "A:\\Program Files\\Microsoft SQL Server\\MSSQL13.MSSQLSERVER\\MSSQL\\Data",
-                                        "destination": destination_path1
+                                        "source": source1,
+                                        "destination": destination_path1   
                                     },
                                     {
-                                        "source": "L:\\Program Files\\Microsoft SQL Server\\MSSQL13.MSSQLSERVER\\MSSQL\\Logs",
+                                        "source": source2,
                                         "destination": destination_path2
                                     }
                                 ]
                             }
                         },
-                        "targetLocation": "original"
+                        "targetLocation": "original" if not aag else "originalPrimary"
                     },
                     "option": {
                         "autocleanup": True,
@@ -1482,9 +1490,23 @@ class restoreAPI(SppAPI):
                     },
                     "source": None
                 }],
-                "view": "applicationview"
+                "view": view,
+                "metadata": metadata 
             }
         }
+
+        if aag:
+            path1 = {
+                "mountPoint": source1.split("\\")[0].lower(),
+                "fileType": "DATA"
+            }
+            restore["spec"]["subpolicy"][0]["destination"]["mapdatabase"][database_href]["paths"][0].update(path1)
+            
+            path2 = {
+                "mountPoint": source2.split("\\")[0].lower(),
+                "fileType": "LOGS"
+            }
+            restore["spec"]["subpolicy"][0]["destination"]["mapdatabase"][database_href]["paths"][1].update(path2)
 
         return self.spp_session.post(data=restore, path='ngp/application?action=restore')['response']
 
@@ -1634,7 +1656,6 @@ class restoreAPI(SppAPI):
         }
 
         return self.spp_session.post(data=restore, path='ngp/application?action=restore')['response']
-
 
     def restore_oracle(self, database_href, version_href, version_copy_href, protection_time,
                        database_name, restore_instance_version, restore_instance_id, database_id,
