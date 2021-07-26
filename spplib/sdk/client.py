@@ -1253,7 +1253,7 @@ class slaAPI(SppAPI):
         # Added target variable to make the function more generic (ex. 'hypervisor' or 'application')
         # without breaking backwards compatibility thanks to target defaulting to 'application'.
 
-        # Added functionality to add multiple instances to apply policies to them
+        # Added functionality to add multiple instances to apply policies to them      
         if not isinstance(instances, list):
             instances = [instances]
 
@@ -1262,16 +1262,25 @@ class slaAPI(SppAPI):
         for instance in instances:
             temp_resources.append({
                 "href": instance['links']['self']['href'],
-                "id": instance['id'],
-                "metadataPath": instance['metadataPath']})
-
-        applySLAPolicies = {"subtype": subtype,
-                            "version": "1.0",
-                            "resources": temp_resources,
-                            "slapolicies": [] if sla == None else [{
-                                "href": sla['links']['self']['href'],
-                                "id":sla['id'],
-                                "name":sla['name']}]}
+                "metadataPath": instance['metadataPath']
+                })
+            
+            if 'id' in instance.keys():
+                temp_resources[-1].update({
+                    "id": instance['id']
+                })
+            
+        applySLAPolicies = {
+            "subtype": subtype,
+            "version": "1.0",
+            "resources": temp_resources,
+            "slapolicies": [] if sla == None else [{
+                "href": sla['links']['self']['href'],
+                "id":sla['id'],
+                "name":sla['name']
+                }                                   
+            ]}
+        
         return self.spp_session.post(data=applySLAPolicies, path='ngp/'+target+'?action=applySLAPolicies')
 
     def assign_hypervisorsla(self, instance_href, instance_id, instance_metadataPath, sla_href, sla_id, sla_name, subtype):
@@ -2101,7 +2110,7 @@ class restoreAPI(SppAPI):
             temp_src['include'] = True
             temp_src['resourceType'] = "vdisk"
             temp_src['href'] = disk['links']['self']['href'].replace('hlo', 'recovery')
-            temp_src['id'] = disk['id']
+            temp_src['id'] = disk['id'] if 'id' in disk.keys() else disk['guestId']
             temp_src['metadata'] = {}
             temp_src['metadata']['name'] = disk['name']
 
