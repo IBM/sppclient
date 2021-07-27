@@ -91,7 +91,7 @@ def get_vm_versions(vm_ids):
         
       if not vers_search:
         if options.verbose:
-          print(func_name + "Did not reutrn information for path: " + post_path)
+          print(func_name + "Did not reutrn information for path: " + get_path)
           
       total_copies = [0,0,0,0]
           
