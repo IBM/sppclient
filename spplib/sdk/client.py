@@ -1056,6 +1056,26 @@ class ExchangeAPI(SppAPI):
     
     def get_database_copy_versions(self, instanceid, databaseid):
         return self.get(path="instance/%s/database/%s" % (instanceid, databaseid) + '/version?from=recovery&sort=[{"property": "protectionTime", "direction": "DESC"}]')
+    
+    def apply_options(self, resource_href, db_id, metadataPath, log_backup):
+        applyoptionsdata = {
+            "resources": [
+                {
+                    "href": resource_href,
+                    "id": db_id,
+                    "metadataPath": metadataPath
+                }
+            ],
+            "subtype": "exch",
+            "options": {
+                "maxParallelStreams": 1,
+                "dbFilesForParallelStreams": "SINGLE_FILE",
+                "backupPreferredNode": "",
+                "logbackup": log_backup
+            }
+        }
+
+        return self.spp_session.post(data=applyoptionsdata, path='ngp/application?action=applyOptions')
 
 
 class slaAPI(SppAPI):
