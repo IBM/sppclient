@@ -1,0 +1,31 @@
+#!/bin/bash
+#
+# program to uplaod an LDAP certificate to IBM Specrum Protect Plus
+
+# IBM Spectrum Protext Server address
+SPPSERVER=sppserver.company.com
+
+# IBM Spectrum Protect Plus username
+SPPUSER=myuser
+
+# IBM Spectrum Protect Plus password
+SPPPASS=secretpass
+
+# certificate file to upload
+CERTFILE="/Users/myuser/certificate.cer"
+
+# name of certificate file registered with IBM Spectrum Protect Plus
+CERTNAME="cert_test.cer"
+
+# login and grab the sessionid
+SPPSESSIONID=$(curl "https://${SPPSERVER}/api/endeavour/session" -X POST --user "${SPPUSER}:${SPPPASS}" --insecure | grep sessionid | python3 -c "import sys, json; print(json.load(sys.stdin)['sessionid'])")
+
+# upload the certificate
+curl --location --request POST 'https://'${SPPSERVER}'/api/security/certificate?validate=true' \
+--header 'x-endeavour-sessionid: '${SPPSESSIONID} \
+--header 'Content-Type: multipart/form-data' \
+--header 'Authorization: Basic Og==' \
+--form 'name='${CERTNAME} \
+--form 'type="ldap"' \
+--form 'crtFile=@'${CERTFILE} \
+--insecure
