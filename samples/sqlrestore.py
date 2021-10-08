@@ -54,7 +54,7 @@ def validate_input():
 
 def find_db():
     searchdata = {"name":options.db}
-    dbsearch = client.SppAPI(session, 'apiapp').post(path="/search?resourceType=database&applicationType=sql&from=recovery", data=searchdata)['databases']
+    dbsearch = client.SppAPI(session, 'apiapp').post(path="/search?resourceType=database&applicationType=sql&from=recovery", data=searchdata)['contents']
     if not dbsearch:
         logger.warning("Did not find recoverable db " + options.db)
         session.logout()
