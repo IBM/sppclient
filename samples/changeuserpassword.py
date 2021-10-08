@@ -44,10 +44,9 @@ def change_password():
             print("Password changed for " + options.username)
           except requests.exceptions.HTTPError as err:
             errmsg = json.loads(err.response.content)
-            print errmsg['description']
+            print(errmsg['description'])
 
 validate_input()
 session = client.SppSession(options.host, options.username, options.password)
 session.login()
 change_password()
-session.logout()
