@@ -47,7 +47,7 @@ def get_vm_backup_info():
 
 def get_vm_version_info(vm):
     vmbuinfo = []
-    urlpath = vm['config']['hypervisorKey'] + "/vm/" + vm['id'] + "/version?from=hlo"
+    urlpath = vm['hypervisorKey'] + "/vm/" + vm['id'] + "/version?from=hlo"
     versions = client.SppAPI(session, 'corehv').get(path=urlpath)['versions']
     for version in versions:
         data = {}
