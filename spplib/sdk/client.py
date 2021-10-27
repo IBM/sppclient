@@ -1202,7 +1202,7 @@ class slaAPI(SppAPI):
                     {
                         "type": "SPPARCHIVE",
                         "retention": {
-                            "age": 90
+                            "age": 30
                         },
                         "trigger": {},
                         "source": "backup",
@@ -2873,15 +2873,31 @@ class cloudAPI(SppAPI):
         super(cloudAPI, self).__init__(spp_session, 'cloud')
 
     def get_azure_buckets(self, cloud_data, registered_key):
-        data = {"provider": cloud_data['provider'], "accesskey": registered_key['links']['self']['href'],
-                "properties": {"endpoint": cloud_data['endpoint']}}
+        data = {
+            "provider": cloud_data['provider'], 
+            "accesskey": registered_key['links']['self']['href'],
+            "properties": {"endpoint": cloud_data['endpoint']}
+            }
         buckets = self.spp_session.post(
             data=data, path='/api/cloud' + '?action=getBuckets')['buckets']
         return buckets
 
     def get_aws_buckets(self, cloud_data, registered_key):
-        data = {"provider": cloud_data['provider'], "accesskey": registered_key['links']['self']['href'],
-                "properties": {"region": cloud_data['region']}}
+        data = {
+            "provider": cloud_data['provider'], 
+            "accesskey": {"href":registered_key['links']['self']['href']},
+            "properties": {"region": cloud_data['region']}
+            }
+        buckets = self.spp_session.post(
+            data=data, path='/api/cloud' + '?action=getBuckets')['buckets']
+        return buckets
+
+    def get_cos_buckets(self, cloud_data, registered_key):
+        data = {
+            "provider": cloud_data['provider'], 
+            "accesskey": registered_key['links']['self']['href'],
+            "properties": {"endpoint": cloud_data['endpoint']}
+            }
         buckets = self.spp_session.post(
             data=data, path='/api/cloud' + '?action=getBuckets')['buckets']
         return buckets
@@ -2894,10 +2910,18 @@ class cloudAPI(SppAPI):
             data=data, path='ngp/cloud')['response']
         return cloud_server
 
-    def register_aws_cloud(self, cloud_data, registered_key, cloud_bucket, archive_bucket, name="testazure11"):
+    def register_aws_cloud(self, cloud_data, registered_key, cloud_bucket, archive_bucket, name="testaws11"):
         data = {"type": "s3", "provider": cloud_data['provider'], "accesskey": registered_key['links']['self']['href'],
                 "properties": {"type": "s3", "region": cloud_data['region'], "bucket": cloud_bucket['id'],
                                "archiveBucket": archive_bucket['id']}, "name": name}
+        cloud_server = self.spp_session.post(
+            data=data, path='ngp/cloud')['response']
+        return cloud_server
+
+    def register_cos_cloud(self, cloud_data, registered_key, cloud_bucket, archive_bucket, name="testcos11"):
+        data = {"type": "s3", "provider": cloud_data['provider'], "accesskey": registered_key['links']['self']['href'], "name": name,
+                "properties": {"type": "s3", "endpoint": cloud_data['endpoint'], "bucket": cloud_bucket['id'],
+                               "archiveBucket": archive_bucket['id']}}
         cloud_server = self.spp_session.post(
             data=data, path='ngp/cloud')['response']
         return cloud_server
