@@ -1997,6 +1997,67 @@ class restoreAPI(SppAPI):
 
         return self.spp_session.post(data=restore, path='ngp/application?action=restore')['response']
 
+
+    def restore_exchange_pit_test(self, database_href, database_name, restore_instance_version, restore_instance_id,
+                                database_id, PIT_time, site_href, database_restore_name, database_paths):
+        restore = {
+            "subType": "exch",
+            "script": {
+                "preGuest": None,
+                "postGuest": None,
+                "continueScriptsOnError": False
+            },
+            "spec": {
+                "source": [{
+                    "href": database_href,
+                    "resourceType": "database",
+                    "include": True,
+                    "version": None,
+                    "metadata": {
+                        "name": database_name,
+                        "instanceVersion": restore_instance_version,
+                        "instanceId": restore_instance_id,
+                        "useLatest": True
+                    },
+                    "id": database_id,
+                    "pointInTime": PIT_time
+                }],
+                "subpolicy": [{
+                    "type": "restore",
+                    "mode": "test",
+                    "destination": {
+                        "mapdatabase": {
+                            database_href: {
+                                "name": database_restore_name,
+                                "paths": database_paths
+                            }
+                        },
+                        "targetLocation": "original"
+                    },
+                    "option": {
+                        "autocleanup": True,
+                        "allowsessoverwrite": True,
+                        "continueonerror": True,
+                        "applicationOption": {
+                            "overwriteExistingDb": False,
+                            "recoveryType": "recovery",
+                            "initParams": "source"
+                        },
+                    },
+                    "source": {
+                        "copy": {
+                            "site": {
+                                "href": site_href
+                            }
+                        }
+                    }
+                }],
+                "view": "applicationview"
+            }
+        }
+        return self.spp_session.post(data=restore, path='ngp/application?action=restore')['response']
+
+
     def restore_file_system_disk(self, instance, source, version, copy, scripts=None):
         if scripts is None:
             scripts = {
