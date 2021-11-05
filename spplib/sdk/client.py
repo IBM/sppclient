@@ -563,14 +563,14 @@ class JobAPI(SppAPI):
                     raise Exception(
                         'Job exceeded maximum time limit and hence job is cancelling')
 
-        if number_of_jobs:
+        if number_of_jobs:            
             job = self.getjob(job_name)
             job_sessions = self.spp_session.get(
-                path='api/endeavour/jobsession?filter=[{"property":"jobId","value":' + job['id'] + ',"op":"="}]&sort=[{"property":"start","direction":"ASC"}]'
+                path='api/endeavour/jobsession?filter=[{"property":"jobId","value":' + job['id'] + ',"op":"="}]&sort=[{"property":"start","direction":"DESC"}]'
             )['sessions'][:number_of_jobs]
             sessionStatus = 'COMPLETED'
             for j in job_sessions:
-                if j['status'] in ['PARTIAL', 'FAILED']:
+                if j['status'] in ['PARTIAL', 'FAILED', 'CANCELED']:
                     sessionStatus = j['status']
         else:
             sessionId = self.getjob(job_name)['lastrun']['sessionId']
