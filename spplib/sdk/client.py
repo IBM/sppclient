@@ -725,7 +725,7 @@ class OracleAPI(SppAPI):
     def apply_options(
         self, resource_href, database_id, metadataPath, activation_time
     ):
-
+    #THIS METHOD WILL BE DISABLED -> use applay_log_options
         applyoptionsdata = {
             "resources": [
                 {
@@ -754,6 +754,27 @@ class OracleAPI(SppAPI):
                 }
             }
         }
+        return self.spp_session.post(data=applyoptionsdata, path='ngp/application?action=applyOptions')
+
+
+    def apply_log_options(self, resource_href, db_id, metadataPath, log_backup):
+        applyoptionsdata = {
+            "resources": [
+                {
+                    "href": resource_href,
+                    "id": db_id,
+                    "metadataPath": metadataPath
+                }
+            ],
+            "subtype": "oracle",
+            "options": {
+                "maxParallelStreams": 1,
+                "dbFilesForParallelStreams": "SINGLE_FILE",
+                "backupPreferredNode": "",
+                "logbackup": log_backup
+            }
+        }
+
         return self.spp_session.post(data=applyoptionsdata, path='ngp/application?action=applyOptions')
 
     def adhoc_backup(self, sla_name, resources):
