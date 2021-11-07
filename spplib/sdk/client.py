@@ -220,7 +220,7 @@ class SppSession(object):
     def __repr__(self):
         return 'sppSession: user: %s' % self.username
 
-    def get(self, restype=None, resid=None, path=None, params={}, endpoint=None, url=None):
+    def get(self, restype=None, resid=None, path=None, params={}, endpoint=None, url=None, return_full_response=False):
         if url is None:
             url = build_url(self.api_url, restype, resid, path, endpoint)
 
@@ -243,7 +243,7 @@ class SppSession(object):
             # Commenting this line to reduce the xml file size
             #logging.info(json.dumps(response_json, sort_keys=True, indent=4, separators=(',', ': ')))
 
-        return resp.json()
+        return resp.json() if not return_full_response else resp
 
     def diag_get(self, restype=None, resid=None, path=None, params={}, endpoint=None, url=None, outfile=None):
         if url is None:
