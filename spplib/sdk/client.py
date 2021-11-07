@@ -563,14 +563,14 @@ class JobAPI(SppAPI):
                     raise Exception(
                         'Job exceeded maximum time limit and hence job is cancelling')
 
-        if number_of_jobs:
+        if number_of_jobs:            
             job = self.getjob(job_name)
             job_sessions = self.spp_session.get(
-                path='api/endeavour/jobsession?filter=[{"property":"jobId","value":' + job['id'] + ',"op":"="}]&sort=[{"property":"start","direction":"ASC"}]'
+                path='api/endeavour/jobsession?filter=[{"property":"jobId","value":' + job['id'] + ',"op":"="}]&sort=[{"property":"start","direction":"DESC"}]'
             )['sessions'][:number_of_jobs]
             sessionStatus = 'COMPLETED'
             for j in job_sessions:
-                if j['status'] in ['PARTIAL', 'FAILED']:
+                if j['status'] in ['PARTIAL', 'FAILED', 'CANCELED']:
                     sessionStatus = j['status']
         else:
             sessionId = self.getjob(job_name)['lastrun']['sessionId']
@@ -725,7 +725,7 @@ class OracleAPI(SppAPI):
     def apply_options(
         self, resource_href, database_id, metadataPath, activation_time
     ):
-
+    #THIS METHOD WILL BE DISABLED -> use applay_log_options
         applyoptionsdata = {
             "resources": [
                 {
@@ -754,6 +754,27 @@ class OracleAPI(SppAPI):
                 }
             }
         }
+        return self.spp_session.post(data=applyoptionsdata, path='ngp/application?action=applyOptions')
+
+
+    def apply_log_options(self, resource_href, db_id, metadataPath, log_backup):
+        applyoptionsdata = {
+            "resources": [
+                {
+                    "href": resource_href,
+                    "id": db_id,
+                    "metadataPath": metadataPath
+                }
+            ],
+            "subtype": "oracle",
+            "options": {
+                "maxParallelStreams": 1,
+                "dbFilesForParallelStreams": "SINGLE_FILE",
+                "backupPreferredNode": "",
+                "logbackup": log_backup
+            }
+        }
+
         return self.spp_session.post(data=applyoptionsdata, path='ngp/application?action=applyOptions')
 
     def adhoc_backup(self, sla_name, resources):
@@ -1056,6 +1077,34 @@ class ExchangeAPI(SppAPI):
     
     def get_database_copy_versions(self, instanceid, databaseid):
         return self.get(path="instance/%s/database/%s" % (instanceid, databaseid) + '/version?from=recovery&sort=[{"property": "protectionTime", "direction": "DESC"}]')
+    
+    def apply_options(self, resource_href, db_id, metadataPath, log_backup):
+        applyoptionsdata = {
+            "resources": [
+                {
+                    "href": resource_href,
+                    "id": db_id,
+                    "metadataPath": metadataPath
+                }
+            ],
+            "subtype": "exch",
+            "options": {
+                "maxParallelStreams": 1,
+                "dbFilesForParallelStreams": "SINGLE_FILE",
+                "backupPreferredNode": "",
+                "logbackup": log_backup
+            }
+        }
+
+        return self.spp_session.post(data=applyoptionsdata, path='ngp/application?action=applyOptions')
+
+    def adhoc_backup(self, sla_name, resources):
+        data = {
+            "slaPolicyName": sla_name,
+            "subtype": "exch",
+            "resource": resources
+        }
+        return self.spp_session.post(data=data, path='ngp/application?action=adhoc')
 
 
 class slaAPI(SppAPI):
@@ -1174,7 +1223,7 @@ class slaAPI(SppAPI):
                     {
                         "type": "SPPARCHIVE",
                         "retention": {
-                            "age": 90
+                            "age": 30
                         },
                         "trigger": {},
                         "source": "backup",
@@ -1968,6 +2017,67 @@ class restoreAPI(SppAPI):
         }
 
         return self.spp_session.post(data=restore, path='ngp/application?action=restore')['response']
+
+
+    def restore_exchange_pit_test(self, database_href, database_name, restore_instance_version, restore_instance_id,
+                                database_id, PIT_time, site_href, database_restore_name, database_paths):
+        restore = {
+            "subType": "exch",
+            "script": {
+                "preGuest": None,
+                "postGuest": None,
+                "continueScriptsOnError": False
+            },
+            "spec": {
+                "source": [{
+                    "href": database_href,
+                    "resourceType": "database",
+                    "include": True,
+                    "version": None,
+                    "metadata": {
+                        "name": database_name,
+                        "instanceVersion": restore_instance_version,
+                        "instanceId": restore_instance_id,
+                        "useLatest": True
+                    },
+                    "id": database_id,
+                    "pointInTime": PIT_time
+                }],
+                "subpolicy": [{
+                    "type": "restore",
+                    "mode": "test",
+                    "destination": {
+                        "mapdatabase": {
+                            database_href: {
+                                "name": database_restore_name,
+                                "paths": database_paths
+                            }
+                        },
+                        "targetLocation": "original"
+                    },
+                    "option": {
+                        "autocleanup": True,
+                        "allowsessoverwrite": True,
+                        "continueonerror": True,
+                        "applicationOption": {
+                            "overwriteExistingDb": False,
+                            "recoveryType": "recovery",
+                            "initParams": "source"
+                        },
+                    },
+                    "source": {
+                        "copy": {
+                            "site": {
+                                "href": site_href
+                            }
+                        }
+                    }
+                }],
+                "view": "applicationview"
+            }
+        }
+        return self.spp_session.post(data=restore, path='ngp/application?action=restore')['response']
+
 
     def restore_file_system_disk(self, instance, source, version, copy, scripts=None):
         if scripts is None:
@@ -2784,15 +2894,31 @@ class cloudAPI(SppAPI):
         super(cloudAPI, self).__init__(spp_session, 'cloud')
 
     def get_azure_buckets(self, cloud_data, registered_key):
-        data = {"provider": cloud_data['provider'], "accesskey": registered_key['links']['self']['href'],
-                "properties": {"endpoint": cloud_data['endpoint']}}
+        data = {
+            "provider": cloud_data['provider'], 
+            "accesskey": registered_key['links']['self']['href'],
+            "properties": {"endpoint": cloud_data['endpoint']}
+            }
         buckets = self.spp_session.post(
             data=data, path='/api/cloud' + '?action=getBuckets')['buckets']
         return buckets
 
     def get_aws_buckets(self, cloud_data, registered_key):
-        data = {"provider": cloud_data['provider'], "accesskey": registered_key['links']['self']['href'],
-                "properties": {"region": cloud_data['region']}}
+        data = {
+            "provider": cloud_data['provider'], 
+            "accesskey": {"href":registered_key['links']['self']['href']},
+            "properties": {"region": cloud_data['region']}
+            }
+        buckets = self.spp_session.post(
+            data=data, path='/api/cloud' + '?action=getBuckets')['buckets']
+        return buckets
+
+    def get_cos_buckets(self, cloud_data, registered_key):
+        data = {
+            "provider": cloud_data['provider'], 
+            "accesskey": registered_key['links']['self']['href'],
+            "properties": {"endpoint": cloud_data['endpoint']}
+            }
         buckets = self.spp_session.post(
             data=data, path='/api/cloud' + '?action=getBuckets')['buckets']
         return buckets
@@ -2805,10 +2931,18 @@ class cloudAPI(SppAPI):
             data=data, path='ngp/cloud')['response']
         return cloud_server
 
-    def register_aws_cloud(self, cloud_data, registered_key, cloud_bucket, archive_bucket, name="testazure11"):
+    def register_aws_cloud(self, cloud_data, registered_key, cloud_bucket, archive_bucket, name="testaws11"):
         data = {"type": "s3", "provider": cloud_data['provider'], "accesskey": registered_key['links']['self']['href'],
                 "properties": {"type": "s3", "region": cloud_data['region'], "bucket": cloud_bucket['id'],
                                "archiveBucket": archive_bucket['id']}, "name": name}
+        cloud_server = self.spp_session.post(
+            data=data, path='ngp/cloud')['response']
+        return cloud_server
+
+    def register_cos_cloud(self, cloud_data, registered_key, cloud_bucket, archive_bucket, name="testcos11"):
+        data = {"type": "s3", "provider": cloud_data['provider'], "accesskey": registered_key['links']['self']['href'], "name": name,
+                "properties": {"type": "s3", "endpoint": cloud_data['endpoint'], "bucket": cloud_bucket['id'],
+                               "archiveBucket": archive_bucket['id']}}
         cloud_server = self.spp_session.post(
             data=data, path='ngp/cloud')['response']
         return cloud_server
