@@ -61,6 +61,7 @@ resource_to_endpoint = {
     'search': 'api/endeavour/search',
     'cloud': 'api/cloud',
     'key': '/api/identity/key',
+    'ping': '/api/lifecycle/ping',
     'certificate': '/api/security/certificate'
 }
 
