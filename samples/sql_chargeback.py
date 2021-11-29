@@ -154,7 +154,7 @@ def get_database_capacity_info(session, application_json_response):
         database_data['instance_pk'] = ''
         database_data['serverName'] = ''
         database_data['databaseName'] = database['name']
-        database_data['sla'] = ''
+        # database_data['sla'] = ''
         database_data['frontendCapacity'] = 0
         database_data['sumSnapshotCapacity'] = 0
         database_data['numberOfSnapshots'] = 0
@@ -173,7 +173,7 @@ def get_database_capacity_info(session, application_json_response):
                     database_data['instance_pk']      = recovery_point['properties']['instancePk']
                     database_data['serverName']       = recovery_point['properties']['host']
                     database_data['frontendCapacity'] = recovery_point['properties']['usedSize'] # this is the front end capacity of the application
-                    database_data['sla']              = recovery_point['properties']['protectionInfo']['policyName'] 
+                    # database_data['sla']              = recovery_point['properties']['protectionInfo']['policyName'] 
                 count += 1
                 database_data['sumSnapshotCapacity'] += recovery_point['properties']['protectionInfo']['transferSize'] # this is the snapshot size of the application
                 
@@ -224,7 +224,7 @@ def get_all_snapshot_info(session, application_json_response):
     return snapshot_array
 
 def print_instance_data(instance_array):
-    len = 150
+    len = 130
     print_line(len)
     print('Number of instances: ' + str(instance_array.__len__()))
     print_line(len)
@@ -243,21 +243,21 @@ def print_instance_data(instance_array):
     return 0
 
 def print_database_data(database_array):
-    len = 150
+    len = 130
     print_line(len)
     print('Number of databases: ' + str(database_array.__len__()))
     print_line(len)
-    print('{:40s} | {:20s} | {:15s} | {:15s} | {:15s} | {:15s} | {:15s}'.format(
-        'Server name', 'Database name', 'SLA', 'Frontend', 'Snapshot', 'Number of', 'Backend'))
-    print('{:40s} | {:20s} | {:15s} | {:15s} | {:15s} | {:15s} | {:15s}'.format(
-        '', '', '', 'Capacity', 'Capacity', 'snapshots', 'Capacity'))
+    print('{:40s} | {:20s} | {:15s} | {:15s} | {:15s} | {:15s}'.format(
+        'Server name', 'Database name', 'Frontend', 'Snapshot', 'Number of', 'Backend'))
+    print('{:40s} | {:20s} | {:15s} | {:15s} | {:15s} | {:15s}'.format(
+        '', '', 'Capacity', 'Capacity', 'snapshots', 'Capacity'))
     print_line(len)
     for database in database_array:
         actualSnapshotCapacity = get_actual_size(database['sumSnapshotCapacity'])
         actualFrontendCapacity = get_actual_size(database['frontendCapacity'])
         actualBackendCapacity = get_actual_size(database['backendCapacity'])
-        print('{:40s} | {:20s} | {:15s} | {:15s} | {:15s} | {:15s} | {:15s}'.format(
-            database['serverName'], database['databaseName'], database['sla'], str(actualFrontendCapacity), 
+        print('{:40s} | {:20s} | {:15s} | {:15s} | {:15s} | {:15s}'.format(
+            database['serverName'], database['databaseName'], str(actualFrontendCapacity), 
             str(actualSnapshotCapacity), str(database['numberOfSnapshots']), str(actualBackendCapacity)))
     print_line(len)
     return 0
