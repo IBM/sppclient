@@ -1622,7 +1622,12 @@ class restoreAPI(SppAPI):
         return self.spp_session.post(data=restore, path='ngp/application?action=restore')['response']
 
     def restore_sql_pit_test(self, database_href, database_name, restore_instance_version, restore_instance_id,
-                             database_id, PIT_time, site_href, database_restore_name="", post_guest=None):
+                             database_id, PIT_time, site_href, database_restore_name="", post_guest=None, 
+                             destination_path1='', destination_path2='', source1=None, source2=None):
+        
+        source1 = "A:\\Program Files\\Microsoft SQL Server\\MSSQL13.MSSQLSERVER\\MSSQL\\Data" if not source1 else source1
+        source2 = "L:\\Program Files\\Microsoft SQL Server\\MSSQL13.MSSQLSERVER\\MSSQL\\Logs" if not source2 else source2
+
         restore = {
             "subType": "sql",
             "script": {
@@ -1661,22 +1666,15 @@ class restoreAPI(SppAPI):
                                 database_href: {
                                     "name": database_restore_name,
                                     "paths": [
-                                        {
-                                            "source": "A:\\Program Files\\Microsoft SQL Server\\MSSQL13.MSSQLSERVER\\MSSQL\\Data",
-                                            "destination": "",
-                                            "mountPoint": "a:",
-                                            "fileType": "DATA"
-
-                                        },
-                                        {
-                                            "source": "L:\\Program Files\\Microsoft SQL Server\\MSSQL13.MSSQLSERVER\\MSSQL\\Logs",
-                                            "destination": "",
-                                            "mountPoint": "l:",
-                                            "fileType": "LOGS"
-
-                                        }
-
-                                    ]
+                                    {
+                                        "source": source1,
+                                        "destination": destination_path1   
+                                    },
+                                    {
+                                        "source": source2,
+                                        "destination": destination_path2
+                                    }
+                                ]
 
                                 }
 
