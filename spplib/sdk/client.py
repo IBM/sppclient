@@ -3017,7 +3017,7 @@ class catalogAPI(SppAPI):
 
     # Returns a previously defined (by assign_sla()) backup job.
     def get_job(self):
-        jobs = self.spp_session.get(path='api/endeavour/job')['jobs']
+        jobs = self.spp_session.get(path='api/endeavour/job?excludeMarkDeleted=true')['jobs']
         for job in jobs:
             if job['subType'] == "catalog":
                 return job
