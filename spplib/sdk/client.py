@@ -425,6 +425,23 @@ class JobSessionAPI(SppAPI):
             path='api/endeavour/jobsession/{}'.format(job_session_id))
 
         return job_session
+    
+    def get_active_jobsession(self, job_name):
+    
+        params = {
+            "pageSize": 100,
+            "sort": '[{"property":"start","direction":"DESC"}]',
+            "filter": ('[{"property":"serviceId","value":["serviceprovider.recovery.application"],' + 
+            '"op":"IN"},{"property":"status","value":["PENDING","RUNNING"],"op":"IN"},{"property":' + 
+            '"subType","value":"file","op":"="}]')
+        }
+
+        for s in self.get(params=params)["sessions"]:
+            if s["jobName"] == job_name:
+                job_session = s 
+                break
+
+        return job_session
 
     def expire_job_session(self, job_session_id):
 
@@ -809,6 +826,9 @@ class FileSystemAPI(SppAPI):
                 break
 
         return file_system_config 
+    
+    def get_copy_versions(self, instance_id, disk_id):
+        return self.get(path="/instance/%s/database/%s" % (instance_id, disk_id) + "/version")
 
     def test_connection(self, file_server_id):
         data = {
@@ -2147,7 +2167,7 @@ class restoreAPI(SppAPI):
 		        "metadata": metadata
             }
         }
-
+        
         return self.post(params={"action": "restore"}, data=data)['response']
 
     def restore_vm_clone(self, subType, vm_href, vm_name, vm_id, vm_version, vm_clone_name, streaming=True):
