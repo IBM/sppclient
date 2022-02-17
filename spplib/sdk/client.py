@@ -205,7 +205,7 @@ class SppSession(object):
         time.sleep(60)
 
         # Periodically check if the server is already up.
-        for _ in range(90):
+        for _ in range(120):
             resp = requests.get(self.url + '/api/lifecycle/ping', verify=False)
             if resp.status_code == 200:
                 return resp
@@ -3083,7 +3083,7 @@ class catalogAPI(SppAPI):
 
         # Periodically check if the server is back up yet.
         # (Wait out "Server is being brought up. Wait...")
-        for i in range(90):
+        for i in range(120):
             resp = requests.get(url, verify=False)
             if resp.status_code == 200:
                 return response
