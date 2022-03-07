@@ -490,7 +490,7 @@ class JobAPI(SppAPI):
         return self.spp_session.get(restype=self.restype, resid=jobid, path='status')
 
     def getjob(self, name):
-        jobs = self.get()['jobs']
+        jobs = self.get(path='?pageSize=10000')['jobs']
         for job in jobs:
             if(job['name'] == name):
                 job_id = job['id']
