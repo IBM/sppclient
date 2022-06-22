@@ -205,7 +205,7 @@ class SppSession(object):
         time.sleep(60)
 
         # Periodically check if the server is already up.
-        for _ in range(120):
+        for _ in range(520):
             resp = requests.get(self.url + '/api/lifecycle/ping', verify=False)
             if resp.status_code == 200:
                 return resp
@@ -493,6 +493,7 @@ class JobAPI(SppAPI):
         jobs = self.get(path='?pageSize=10000')['jobs']
         for job in jobs:
             if(job['name'] == name):
+                print(f"JOB NAME: {job['name']} --  {name}")
                 job_id = job['id']
                 return job
     # TODO: Accept a callback that can be called every time job status is polled.
@@ -3083,7 +3084,7 @@ class catalogAPI(SppAPI):
 
         # Periodically check if the server is back up yet.
         # (Wait out "Server is being brought up. Wait...")
-        for i in range(120):
+        for i in range(520):
             resp = requests.get(url, verify=False)
             if resp.status_code == 200:
                 return response
