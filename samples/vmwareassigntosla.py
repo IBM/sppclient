@@ -76,18 +76,20 @@ def assign_vms_to_sla():
     assigndata = {}
     slainfo = get_sla_info()
     vminfo = get_vm_info()
-    assigndata['subtype'] = "vmware"
-    assigndata['version'] = "1.0"
-    assigndata['resources'] = vminfo
-    assigndata['slapolicies'] = slainfo
-    if(slainfo == ""):
-        assigndata['slapolicies'] = []
-        client.SppAPI(session, 'spphv').post(path='?action=applySLAPolicies', data=assigndata)
-        logger.info("VMs are now unassigned")
-    else:
+    if len(vminfo) != 0:
+        assigndata['subtype'] = "vmware"
+        assigndata['version'] = "1.0"
+        assigndata['resources'] = vminfo
+        assigndata['slapolicies'] = slainfo
+        if(slainfo == ""):
+            assigndata['slapolicies'] = []
+            client.SppAPI(session, 'spphv').post(path='?action=applySLAPolicies', data=assigndata)
+            logger.info("VMs are now unassigned")
+        else:
 
-        resp = client.SppAPI(session, 'spphv').post(path='?action=applySLAPolicies', data=assigndata)
-        logger.info("VMs are now assigned")
+            resp = client.SppAPI(session, 'spphv').post(path='?action=applySLAPolicies', data=assigndata)
+            logger.info("VMs are now assigned")
+
 
 validate_input()
 session = client.SppSession(options.host, options.username, options.password)
