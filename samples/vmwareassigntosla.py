@@ -40,15 +40,15 @@ def get_vm_info():
         vmsearch = client.SppAPI(session, 'corehv').post(path="/search?resourceType=vm&from=hlo", data=searchdata)['vms']
         if not vmsearch:
             logger.warning("Did not find VM " + vm)
-            break
-        for foundvm in vmsearch:
-            if(foundvm['name'] == vm):
-                vmdata['href'] = foundvm['links']['self']['href']
-                vmdata['id'] = foundvm['id']
-                vmdata['metadataPath'] = foundvm['metadataPath']
-                vmarray.append(copy.deepcopy(vmdata))
-                logger.info("Adding VM " + vm + " to SLA " + options.sla)
-                break
+        else:
+            for foundvm in vmsearch:
+                if(foundvm['name'] == vm):
+                    vmdata['href'] = foundvm['links']['self']['href']
+                    vmdata['id'] = foundvm['id']
+                    vmdata['metadataPath'] = foundvm['metadataPath']
+                    vmarray.append(copy.deepcopy(vmdata))
+                    logger.info("Adding VM " + vm + " to SLA " + options.sla)
+                    break
     return vmarray
 
 def get_sla_info():
