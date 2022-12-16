@@ -190,6 +190,39 @@ class SppSession(object):
         self.admin_console_sessionid = r.json()['authoutput']['sessionId']
         self.conn.headers.update({'x-ac-sessionid': self.admin_console_sessionid})
 
+    def admin_get(self, filename):
+    		resp = self.conn.get("%s:8090/emi/api/%s" % (self.url, filename))
+    		self.conn.headers.update({'x-ac-sessionid': self.admin_console_sessionid})
+    		return resp.json()
+    	  
+    def admin_update_yum(self, version=None, build=None):
+    		data = {
+    			'version': version,
+    			'build': build
+    		}
+    		resp = self.conn.post("%s:8090/emi/api/configureyum" % self.url, data=data)
+    		self.conn.headers.update({'x-ac-sessionid': self.admin_console_sessionid})
+    		return resp.json()
+    		
+    def admin_check_license(self):
+    		#hardcode params; the user doesn't know where the license lives
+    		qsp = {}
+    		qsp['filename'] = "ECX.lic"
+    		qsp['filepath'] = "/opt/ECX/virgo/repository/ecx-usr"
+    		resp = self.conn.get("%s:8090/emi/api/checklicense" % self.url,params=qsp)
+    		self.conn.headers.update({'x-ac-sessionid': self.admin_console_sessionid})
+    		return resp.json()
+
+    def admin_update_server(self, params={}):
+    		resp = self.conn.post("%s:8090/emi/api/update" % self.url, params=params)
+    		self.conn.headers.update({'x-ac-sessionid': self.admin_console_sessionid})
+    		return resp.json()     
+
+    def admin_update_ac(self):
+    		resp = self.conn.post("%s:8090/emi/api/updateac" % self.url)
+    		self.conn.headers.update({'x-ac-sessionid': self.admin_console_sessionid})
+    		return # there is no JSON response for this call
+
     def restart_spp(self):
         data = {
             'appaction': 'restartapp'
