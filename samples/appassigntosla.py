@@ -41,7 +41,7 @@ def get_db_info():
     for db in options.dbs:
         dbdata = {}
         searchdata = {"name":db}
-        dbsearch = client.SppAPI(session, 'apiapp').post(path="/search?resourceType=database&applicationType="+options.type+"&from=hlo", data=searchdata)['databases']
+        dbsearch = client.SppAPI(session, 'apiapp').post(path="/search?resourceType=database&applicationType="+options.type+"&from=hlo", data=searchdata)['contents']
         if not dbsearch:
             logger.warning("Did not find database " + db)
             break

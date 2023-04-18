@@ -43,7 +43,7 @@ def delete_site():
         print(options.sitename + " is deleted")
     except client.requests.exceptions.HTTPError as err:
         errmsg = json.loads(err.response.content)
-        print(errmsg['response'])
+        print(errmsg['description'])
 
 validate_input()
 session = client.SppSession(options.host, options.username, options.password)

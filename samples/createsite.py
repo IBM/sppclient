@@ -1,5 +1,5 @@
 # Script to create a new vSnap site in SPP
-# Use registervsnap.py -h for help
+# Use createsite.py -h for help
 
 import json
 import logging

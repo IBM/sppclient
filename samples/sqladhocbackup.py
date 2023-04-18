@@ -34,7 +34,7 @@ def validate_input():
 
 def find_db():
     searchdata = {"name":options.db}
-    dbsearch = client.SppAPI(session, 'apiapp').post(path="/search?resourceType=database&applicationType=sql&from=hlo", data=searchdata)['databases']
+    dbsearch = client.SppAPI(session, 'apiapp').post(path="/search?resourceType=database&applicationType=sql&from=hlo", data=searchdata)['contents']
     if not dbsearch:
         logger.warning("Did not find db " + options.db)
         session.logout()

@@ -34,7 +34,7 @@ def install_license():
     hdrs = {'Content-Type': 'application/json','Accept': 'application/json'}
     r = requests.post(options.host + '/api/endeavour/session?action=installLicense',
                       auth=requests.auth.HTTPBasicAuth('admin','password'), verify=False, headers=hdrs)
-    if(r.status_code is 204):
+    if(r.status_code == 204):
         logger.info("License installed.")
     else:
         logger.info("Error installing license.")

@@ -106,7 +106,7 @@ def build_start_date():
     sdt = datetime.datetime.strptime(options.starttime, '%m/%d/%Y %H:%M')
     sdt += datetime.timedelta(minutes=2.5)
     sdt -=  datetime.timedelta(minutes=sdt.minute %5, seconds=sdt.second, microseconds=sdt.microsecond)
-    starttime = int(sdt.strftime("%s"))*1000
+    starttime = int(sdt.strftime("%S"))*1000
     return starttime
 
 def build_weekly_dowlist(adate):
